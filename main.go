@@ -8,12 +8,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/kelseyhightower/envconfig"
-	"golang.org/x/net/context"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
-	"google.golang.org/cloud"
-	"google.golang.org/cloud/storage"
+	"github.com/arschles/gcsup/Godeps/_workspace/src/github.com/kelseyhightower/envconfig"
+	"github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/net/context"
+	"github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/oauth2"
+	"github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/oauth2/google"
+	"github.com/arschles/gcsup/Godeps/_workspace/src/google.golang.org/cloud"
+	"github.com/arschles/gcsup/Godeps/_workspace/src/google.golang.org/cloud/storage"
 )
 
 type Config struct {
