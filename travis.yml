@@ -1,0 +1,20 @@
+language: generic
+branches:
+  only:
+    - master
+cache:
+  directories:
+    - vendor
+sudo: required
+services:
+  - docker
+install:
+  - docker run --rm -v $PWD:/pwd -w /pwd quay.io/deis/go-dev:0.2.0 glide up
+script:
+  - docker run --rm -v $PWD:/pwd -w /pwd quay.io/deis/go-dev:0.2.0 go test $(glide nv)
+  - docker run --rm -v $PWD:/pwd -w /pwd quay.io/deis/go-dev:0.2.0 go build -o gcsup
+deploy:
+  provider: script
+  script: _scripts/deploy.sh
+  on:
+    branch: master

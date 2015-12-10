@@ -1,5 +1,0 @@
-test:
-  pre:
-    - go vet ./...
-  override:
-    - go build -v -o $CIRCLE_ARTIFACTS/gcsup
