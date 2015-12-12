@@ -8,8 +8,8 @@ cache:
 sudo: required
 services:
   - docker
-# install:
-#   - make bootstrap
+install:
+  - make bootstrap
 script:
   - make test
   - make build
