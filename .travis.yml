@@ -5,6 +5,8 @@ cache:
 sudo: required
 services:
   - docker
+install:
+  - make bootstrap
 script:
   - make test
   - make build
