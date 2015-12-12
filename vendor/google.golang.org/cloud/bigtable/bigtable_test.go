@@ -40,7 +40,6 @@ func dataChunk(fam, col string, ts int64, data string) string {
 }
 
 func commit() string { return "chunks:<commit_row:true>" }
-func reset() string  { return "chunks:<reset_row:true>" }
 
 var chunkTests = []struct {
 	desc   string
@@ -89,35 +88,9 @@ var chunkTests = []struct {
 			},
 		},
 	},
-	{
-		desc: "chunk, reset, chunk, commit",
-		chunks: []string{
-			`row_key: "row1" ` + dataChunk("fam", "col1", 1428382701000000, "data"),
-			`row_key: "row1" ` + reset(),
-			`row_key: "row1" ` + dataChunk("fam", "col1", 1428382702000000, "data") + commit(),
-		},
-		want: map[string]Row{
-			"row1": Row{
-				"fam": []ReadItem{{
-					Row:       "row1",
-					Column:    "fam:col1",
-					Timestamp: 1428382702000000,
-					Value:     []byte("data"),
-				}},
-			},
-		},
-	},
-	{
-		desc: "chunk, reset, commit",
-		chunks: []string{
-			`row_key: "row1" ` + dataChunk("fam", "col1", 1428382701000000, "data"),
-			`row_key: "row1" ` + reset(),
-			`row_key: "row1" ` + commit(),
-		},
-		want: map[string]Row{},
-	},
 	// TODO(dsymonds): More test cases, including
 	//	- multiple rows
+	//	- reset_row
 }
 
 func TestChunkReader(t *testing.T) {
@@ -186,7 +159,7 @@ func TestClientIntegration(t *testing.T) {
 		}
 		defer srv.Close()
 		t.Logf("bttest.Server running on %s", srv.Addr)
-		conn, err := grpc.Dial(srv.Addr, grpc.WithInsecure())
+		conn, err := grpc.Dial(srv.Addr)
 		if err != nil {
 			t.Fatalf("grpc.Dial: %v", err)
 		}
@@ -374,21 +347,6 @@ func TestClientIntegration(t *testing.T) {
 		t.Errorf("Partial ReadRows: %v", err)
 	}
 	checkpoint("did partial ReadRows test")
-
-	// Delete a row and check it goes away.
-	mut = NewMutation()
-	mut.DeleteRow()
-	if err := tbl.Apply(ctx, "wmckinley", mut); err != nil {
-		t.Errorf("Apply DeleteRow: %v", err)
-	}
-	row, err = tbl.ReadRow(ctx, "wmckinley")
-	if err != nil {
-		t.Fatalf("Reading a row after DeleteRow: %v", err)
-	}
-	if len(row) != 0 {
-		t.Fatalf("Read non-zero row after DeleteRow: %v", row)
-	}
-	checkpoint("exercised DeleteRow")
 
 	// Check ReadModifyWrite.
 

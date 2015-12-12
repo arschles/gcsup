@@ -97,12 +97,13 @@ func TestLoad(t *testing.T) {
 		},
 		{
 			dst: &Table{
-				ProjectID: "project-id",
-				DatasetID: "dataset-id",
-				TableID:   "table-id",
+				ProjectID:         "project-id",
+				DatasetID:         "dataset-id",
+				TableID:           "table-id",
+				CreateDisposition: "CREATE_NEVER",
+				WriteDisposition:  "WRITE_TRUNCATE",
 			},
-			options: []Option{CreateNever, WriteTruncate},
-			src:     defaultGCS,
+			src: defaultGCS,
 			want: func() *bq.Job {
 				j := defaultLoadJob()
 				j.Configuration.Load.CreateDisposition = "CREATE_NEVER"
@@ -118,7 +119,7 @@ func TestLoad(t *testing.T) {
 			},
 			src: defaultGCS,
 			options: []Option{
-				DestinationSchema(Schema{
+				DestinationSchema(&Schema{
 					stringFieldSchema(),
 					nestedFieldSchema(),
 				}),

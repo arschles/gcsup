@@ -63,9 +63,10 @@ func main() {
 	}
 
 	table := &bigquery.Table{
-		ProjectID: *project,
-		DatasetID: *dataset,
-		TableID:   *table,
+		ProjectID:        *project,
+		DatasetID:        *dataset,
+		TableID:          *table,
+		WriteDisposition: bigquery.WriteTruncate,
 	}
 
 	gcs := client.NewGCSReference(fmt.Sprintf("gs://%s/%s", *bucket, *object))
@@ -75,8 +76,7 @@ func main() {
 	job, err := client.Copy(
 		context.Background(), table, gcs,
 		bigquery.MaxBadRecords(1),
-		bigquery.AllowQuotedNewlines(),
-		bigquery.WriteTruncate)
+		bigquery.AllowQuotedNewlines())
 
 	if err != nil {
 		log.Fatalf("Loading data: %v", err)

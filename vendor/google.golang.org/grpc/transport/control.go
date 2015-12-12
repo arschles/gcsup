@@ -37,7 +37,7 @@ import (
 	"fmt"
 	"sync"
 
-	"golang.org/x/net/http2"
+	"github.com/bradfitz/http2"
 )
 
 const (
@@ -61,8 +61,8 @@ func (windowUpdate) isItem() bool {
 }
 
 type settings struct {
-	ack bool
-	ss  []http2.Setting
+	ack     bool
+	setting []http2.Setting
 }
 
 func (settings) isItem() bool {
@@ -86,8 +86,7 @@ func (flushIO) isItem() bool {
 }
 
 type ping struct {
-	ack  bool
-	data [8]byte
+	ack bool
 }
 
 func (ping) isItem() bool {
@@ -105,14 +104,8 @@ type quotaPool struct {
 
 // newQuotaPool creates a quotaPool which has quota q available to consume.
 func newQuotaPool(q int) *quotaPool {
-	qb := &quotaPool{
-		c: make(chan int, 1),
-	}
-	if q > 0 {
-		qb.c <- q
-	} else {
-		qb.quota = q
-	}
+	qb := &quotaPool{c: make(chan int, 1)}
+	qb.c <- q
 	return qb
 }
 

@@ -17,16 +17,21 @@ package datastore_test
 import (
 	"io/ioutil"
 	"log"
+	"testing"
 	"time"
 
 	"golang.org/x/net/context"
+	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/cloud"
 	"google.golang.org/cloud/datastore"
 )
 
-// TODO(djd): reevaluate this example given new Client config.
-func Example_auth() *datastore.Client {
+// TODO(jbd): Remove after Go 1.4.
+// Related to https://codereview.appspot.com/107320046
+func TestA(t *testing.T) {}
+
+func Example_auth() context.Context {
 	// Initialize an authorized context with Google Developers Console
 	// JSON key. Read the google package examples to learn more about
 	// different authorization flows you can use.
@@ -43,21 +48,13 @@ func Example_auth() *datastore.Client {
 	if err != nil {
 		log.Fatal(err)
 	}
-	ctx := context.Background()
-	client, err := datastore.NewClient(ctx, "project-id", cloud.WithTokenSource(conf.TokenSource(ctx)))
-	if err != nil {
-		log.Fatal(err)
-	}
-	// Use the client (see other examples).
-	return client
+	ctx := cloud.NewContext("project-id", conf.Client(oauth2.NoContext))
+	// Use the context (see other examples)
+	return ctx
 }
 
 func ExampleGet() {
-	ctx := context.Background()
-	client, err := datastore.NewClient(ctx, "project-id")
-	if err != nil {
-		log.Fatal(err)
-	}
+	ctx := Example_auth()
 
 	type Article struct {
 		Title       string
@@ -68,17 +65,13 @@ func ExampleGet() {
 	}
 	key := datastore.NewKey(ctx, "Article", "articled1", 0, nil)
 	article := &Article{}
-	if err := client.Get(ctx, key, article); err != nil {
+	if err := datastore.Get(ctx, key, article); err != nil {
 		log.Fatal(err)
 	}
 }
 
 func ExamplePut() {
-	ctx := context.Background()
-	client, err := datastore.NewClient(ctx, "project-id")
-	if err != nil {
-		log.Fatal(err)
-	}
+	ctx := Example_auth()
 
 	type Article struct {
 		Title       string
@@ -88,7 +81,7 @@ func ExamplePut() {
 		PublishedAt time.Time
 	}
 	newKey := datastore.NewIncompleteKey(ctx, "Article", nil)
-	_, err = client.Put(ctx, newKey, &Article{
+	_, err := datastore.Put(ctx, newKey, &Article{
 		Title:       "The title of the article",
 		Description: "The description of the article...",
 		Body:        "...",
@@ -101,14 +94,10 @@ func ExamplePut() {
 }
 
 func ExampleDelete() {
-	ctx := context.Background()
-	client, err := datastore.NewClient(ctx, "project-id")
-	if err != nil {
-		log.Fatal(err)
-	}
+	ctx := Example_auth()
 
 	key := datastore.NewKey(ctx, "Article", "articled1", 0, nil)
-	if err := client.Delete(ctx, key); err != nil {
+	if err := datastore.Delete(ctx, key); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -120,11 +109,7 @@ type Post struct {
 }
 
 func ExampleGetMulti() {
-	ctx := context.Background()
-	client, err := datastore.NewClient(ctx, "project-id")
-	if err != nil {
-		log.Fatal(err)
-	}
+	ctx := Example_auth()
 
 	keys := []*datastore.Key{
 		datastore.NewKey(ctx, "Post", "post1", 0, nil),
@@ -132,17 +117,13 @@ func ExampleGetMulti() {
 		datastore.NewKey(ctx, "Post", "post3", 0, nil),
 	}
 	posts := make([]Post, 3)
-	if err := client.GetMulti(ctx, keys, posts); err != nil {
+	if err := datastore.GetMulti(ctx, keys, posts); err != nil {
 		log.Println(err)
 	}
 }
 
 func ExamplePutMulti_slice() {
-	ctx := context.Background()
-	client, err := datastore.NewClient(ctx, "project-id")
-	if err != nil {
-		log.Fatal(err)
-	}
+	ctx := Example_auth()
 
 	keys := []*datastore.Key{
 		datastore.NewKey(ctx, "Post", "post1", 0, nil),
@@ -154,17 +135,13 @@ func ExamplePutMulti_slice() {
 		{Title: "Post 1", PublishedAt: time.Now()},
 		{Title: "Post 2", PublishedAt: time.Now()},
 	}
-	if _, err := client.PutMulti(ctx, keys, posts); err != nil {
+	if _, err := datastore.PutMulti(ctx, keys, posts); err != nil {
 		log.Fatal(err)
 	}
 }
 
 func ExamplePutMulti_interfaceSlice() {
-	ctx := context.Background()
-	client, err := datastore.NewClient(ctx, "project-id")
-	if err != nil {
-		log.Fatal(err)
-	}
+	ctx := Example_auth()
 
 	keys := []*datastore.Key{
 		datastore.NewKey(ctx, "Post", "post1", 0, nil),
@@ -176,21 +153,16 @@ func ExamplePutMulti_interfaceSlice() {
 		&Post{Title: "Post 1", PublishedAt: time.Now()},
 		&Post{Title: "Post 2", PublishedAt: time.Now()},
 	}
-	if _, err := client.PutMulti(ctx, keys, posts); err != nil {
+	if _, err := datastore.PutMulti(ctx, keys, posts); err != nil {
 		log.Fatal(err)
 	}
 }
 
 func ExampleQuery() {
-	ctx := context.Background()
-	client, err := datastore.NewClient(ctx, "project-id")
-	if err != nil {
-		log.Fatal(err)
-	}
+	ctx := Example_auth()
 
 	// Count the number of the post entities.
-	q := datastore.NewQuery("Post")
-	n, err := client.Count(ctx, q)
+	n, err := datastore.NewQuery("Post").Count(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -198,8 +170,7 @@ func ExampleQuery() {
 
 	// List the posts published since yesterday.
 	yesterday := time.Now().Add(-24 * time.Hour)
-	q = datastore.NewQuery("Post").Filter("PublishedAt >", yesterday)
-	it := client.Run(ctx, q)
+	it := datastore.NewQuery("Post").Filter("PublishedAt >", yesterday).Run(ctx)
 	// Use the iterator.
 	_ = it
 
@@ -211,11 +182,7 @@ func ExampleQuery() {
 }
 
 func ExampleTransaction() {
-	ctx := context.Background()
-	client, err := datastore.NewClient(ctx, "project-id")
-	if err != nil {
-		log.Fatal(err)
-	}
+	ctx := Example_auth()
 	const retries = 3
 
 	// Increment a counter.
@@ -228,7 +195,7 @@ func ExampleTransaction() {
 	key := datastore.NewKey(ctx, "counter", "CounterA", 0, nil)
 
 	for i := 0; i < retries; i++ {
-		tx, err := client.NewTransaction(ctx)
+		tx, err := datastore.NewTransaction(ctx)
 		if err != nil {
 			break
 		}

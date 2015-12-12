@@ -29,7 +29,7 @@
 
 syntax = "proto3";
 
-package routeguide;
+package proto;
 
 // Interface exported by the server.
 service RouteGuide {

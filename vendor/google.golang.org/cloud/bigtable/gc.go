@@ -47,13 +47,13 @@ func (ip intersectionPolicy) String() string {
 }
 
 func (ip intersectionPolicy) proto() *bttdpb.GcRule {
-	inter := &bttdpb.GcRule_Intersection{}
+	p := &bttdpb.GcRule{
+		Intersection: &bttdpb.GcRule_Intersection{},
+	}
 	for _, sp := range ip.sub {
-		inter.Rules = append(inter.Rules, sp.proto())
+		p.Intersection.Rules = append(p.Intersection.Rules, sp.proto())
 	}
-	return &bttdpb.GcRule{
-		Rule: &bttdpb.GcRule_Intersection_{inter},
-	}
+	return p
 }
 
 // UnionPolicy returns a GC policy that applies when any of its sub-policies apply.
@@ -72,13 +72,13 @@ func (up unionPolicy) String() string {
 }
 
 func (up unionPolicy) proto() *bttdpb.GcRule {
-	union := &bttdpb.GcRule_Union{}
+	p := &bttdpb.GcRule{
+		Union: &bttdpb.GcRule_Union{},
+	}
 	for _, sp := range up.sub {
-		union.Rules = append(union.Rules, sp.proto())
+		p.Union.Rules = append(p.Union.Rules, sp.proto())
 	}
-	return &bttdpb.GcRule{
-		Rule: &bttdpb.GcRule_Union_{union},
-	}
+	return p
 }
 
 // MaxVersionsPolicy returns a GC policy that applies to all versions of a cell
@@ -90,7 +90,7 @@ type maxVersionsPolicy int
 func (mvp maxVersionsPolicy) String() string { return fmt.Sprintf("versions() > %d", int(mvp)) }
 
 func (mvp maxVersionsPolicy) proto() *bttdpb.GcRule {
-	return &bttdpb.GcRule{Rule: &bttdpb.GcRule_MaxNumVersions{int32(mvp)}}
+	return &bttdpb.GcRule{MaxNumVersions: int32(mvp)}
 }
 
 // MaxAgePolicy returns a GC policy that applies to all cells
@@ -123,9 +123,9 @@ func (ma maxAgePolicy) proto() *bttdpb.GcRule {
 	// Fix this if people care about GC policies over 290 years.
 	ns := time.Duration(ma).Nanoseconds()
 	return &bttdpb.GcRule{
-		Rule: &bttdpb.GcRule_MaxAge{&durpb.Duration{
+		MaxAge: &durpb.Duration{
 			Seconds: ns / 1e9,
 			Nanos:   int32(ns % 1e9),
-		}},
+		},
 	}
 }

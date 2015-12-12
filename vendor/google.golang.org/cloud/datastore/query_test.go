@@ -15,13 +15,17 @@
 package datastore
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/golang/protobuf/proto"
-	"golang.org/x/net/context"
+	"google.golang.org/cloud"
 	pb "google.golang.org/cloud/internal/datastore"
 )
 
@@ -48,10 +52,55 @@ var (
 	}
 )
 
-type fakeClient func(req, resp proto.Message) (err error)
+type fakeTransport struct {
+	Handler func(req, resp proto.Message) (err error)
+}
 
-func (c fakeClient) Call(ctx context.Context, method string, req, resp proto.Message) error {
-	return c(req, resp)
+func (t *fakeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+
+	body, err := ioutil.ReadAll(req.Body)
+
+	var in pb.RunQueryRequest
+	var resp http.Response
+	if err = proto.Unmarshal(body, &in); err != nil {
+		// Get back an error
+		resp = http.Response{
+			StatusCode: http.StatusBadRequest,
+		}
+	} else {
+		// Run our fake query and serialize the response
+		var out pb.RunQueryResponse
+		err := t.Handler(&in, &out)
+		if err != nil {
+
+			resp = http.Response{
+				StatusCode: http.StatusBadRequest,
+			}
+		} else {
+			payload, err := proto.Marshal(&out)
+			if err != nil {
+				resp = http.Response{
+					StatusCode: http.StatusBadRequest,
+				}
+			} else {
+				resp = http.Response{
+					StatusCode: http.StatusOK,
+					Body:       ioutil.NopCloser(bytes.NewBuffer(payload)),
+				}
+			}
+
+		}
+	}
+
+	// Set common response fields
+	resp.Proto = "HTTP/1.0"
+	resp.ProtoMajor = 1
+	resp.ProtoMinor = 1
+	if resp.Body == nil {
+		resp.Body = ioutil.NopCloser(strings.NewReader(""))
+	}
+
+	return &resp, nil
 }
 
 func fakeRunQuery(in *pb.RunQueryRequest, out *pb.RunQueryResponse) error {
@@ -281,13 +330,11 @@ func TestSimpleQuery(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		nCall := 0
-		client := &Client{
-			client: fakeClient(func(in, out proto.Message) error {
+		ctx := cloud.NewContext("queryTest", &http.Client{
+			Transport: &fakeTransport{Handler: func(in, out proto.Message) error {
 				nCall++
 				return fakeRunQuery(in.(*pb.RunQueryRequest), out.(*pb.RunQueryResponse))
-			}),
-		}
-		ctx := context.Background()
+			}}})
 
 		var (
 			expectedErr   error
@@ -298,7 +345,7 @@ func TestSimpleQuery(t *testing.T) {
 		} else {
 			expectedNCall = 1
 		}
-		keys, err := client.GetAll(ctx, NewQuery("Gopher"), tc.dst)
+		keys, err := NewQuery("Gopher").GetAll(ctx, tc.dst)
 		if err != expectedErr {
 			t.Errorf("dst type %T: got error %v, want %v", tc.dst, err, expectedErr)
 			continue
@@ -449,21 +496,20 @@ func TestFilterParser(t *testing.T) {
 
 func TestNamespaceQuery(t *testing.T) {
 	gotNamespace := make(chan string, 1)
-	ctx := context.Background()
-	client := &Client{
-		client: fakeClient(func(req, resp proto.Message) error {
+	ctx := cloud.NewContext("nsQueryTest", &http.Client{Transport: &fakeTransport{
+		Handler: func(req, resp proto.Message) error {
 			gotNamespace <- req.(*pb.RunQueryRequest).GetPartitionId().GetNamespace()
 			return errors.New("not implemented")
-		}),
-	}
+		},
+	}})
 
 	var gs []Gopher
 
-	client.GetAll(ctx, NewQuery("gopher"), &gs)
+	NewQuery("Gopher").GetAll(ctx, &gs)
 	if got, want := <-gotNamespace, ""; got != want {
 		t.Errorf("GetAll: got namespace %q, want %q", got, want)
 	}
-	client.Count(ctx, NewQuery("gopher"))
+	NewQuery("Gopher").Count(ctx)
 	if got, want := <-gotNamespace, ""; got != want {
 		t.Errorf("Count: got namespace %q, want %q", got, want)
 	}
@@ -471,11 +517,11 @@ func TestNamespaceQuery(t *testing.T) {
 	const ns = "not_default"
 	ctx = WithNamespace(ctx, ns)
 
-	client.GetAll(ctx, NewQuery("gopher"), &gs)
+	NewQuery("Gopher").GetAll(ctx, &gs)
 	if got, want := <-gotNamespace, ns; got != want {
 		t.Errorf("GetAll: got namespace %q, want %q", got, want)
 	}
-	client.Count(ctx, NewQuery("gopher"))
+	NewQuery("Gopher").Count(ctx)
 	if got, want := <-gotNamespace, ns; got != want {
 		t.Errorf("Count: got namespace %q, want %q", got, want)
 	}

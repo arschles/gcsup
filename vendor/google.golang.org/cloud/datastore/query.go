@@ -100,8 +100,7 @@ type Query struct {
 	offset   int32
 	start    []byte
 	end      []byte
-
-	trans *Transaction
+	trans    *Transaction
 
 	err error
 }
@@ -409,8 +408,8 @@ func (q *Query) toProto(req *pb.RunQueryRequest) error {
 	return nil
 }
 
-// Count returns the number of results for the given query.
-func (c *Client) Count(ctx context.Context, q *Query) (int, error) {
+// Count returns the number of results for the query.
+func (q *Query) Count(ctx context.Context) (int, error) {
 	// Check that the query is well-formed.
 	if q.err != nil {
 		return 0, q.err
@@ -431,7 +430,7 @@ func (c *Client) Count(ctx context.Context, q *Query) (int, error) {
 		return 0, err
 	}
 	res := &pb.RunQueryResponse{}
-	if err := c.call(ctx, "runQuery", req, res); err != nil {
+	if err := call(ctx, "runQuery", req, res); err != nil {
 		return 0, err
 	}
 	var n int
@@ -443,14 +442,14 @@ func (c *Client) Count(ctx context.Context, q *Query) (int, error) {
 		}
 		var err error
 		// TODO(jbd): Support count queries that have a limit and an offset.
-		if err = callNext(ctx, c, req, res, 0, 0); err != nil {
+		if err = callNext(ctx, req, res, 0, 0); err != nil {
 			return 0, err
 		}
 	}
 	return int(n), nil
 }
 
-func callNext(ctx context.Context, client *Client, req *pb.RunQueryRequest, res *pb.RunQueryResponse, offset, limit int32) error {
+func callNext(ctx context.Context, req *pb.RunQueryRequest, res *pb.RunQueryResponse, offset, limit int32) error {
 	if res.GetBatch().EndCursor == nil {
 		return errors.New("datastore: internal error: server did not return a cursor")
 	}
@@ -462,11 +461,11 @@ func callNext(ctx context.Context, client *Client, req *pb.RunQueryRequest, res 
 		req.Query.Offset = proto.Int32(offset)
 	}
 	res.Reset()
-	return client.call(ctx, "runQuery", req, res)
+	return call(ctx, "runQuery", req, res)
 }
 
-// GetAll runs the provided query in the given context and returns all keys
-// that match that query, as well as appending the values to dst.
+// GetAll runs the query in the given context and returns all keys that match
+// that query, as well as appending the values to dst.
 //
 // dst must have type *[]S or *[]*S or *[]P, for some struct type S or some non-
 // interface, non-pointer type P such that P or *P implements PropertyLoadSaver.
@@ -479,7 +478,7 @@ func callNext(ctx context.Context, client *Client, req *pb.RunQueryRequest, res 
 // added to dst.
 //
 // If q is a ``keys-only'' query, GetAll ignores dst and only returns the keys.
-func (c *Client) GetAll(ctx context.Context, q *Query, dst interface{}) ([]*Key, error) {
+func (q *Query) GetAll(ctx context.Context, dst interface{}) ([]*Key, error) {
 	var (
 		dv               reflect.Value
 		mat              multiArgType
@@ -499,7 +498,7 @@ func (c *Client) GetAll(ctx context.Context, q *Query, dst interface{}) ([]*Key,
 	}
 
 	var keys []*Key
-	for t := c.Run(ctx, q); ; {
+	for t := q.Run(ctx); ; {
 		k, e, err := t.next()
 		if err == Done {
 			break
@@ -545,14 +544,13 @@ func (c *Client) GetAll(ctx context.Context, q *Query, dst interface{}) ([]*Key,
 	return keys, errFieldMismatch
 }
 
-// Run runs the given query in the given context.
-func (c *Client) Run(ctx context.Context, q *Query) *Iterator {
+// Run runs the query in the given context.
+func (q *Query) Run(ctx context.Context) *Iterator {
 	if q.err != nil {
 		return &Iterator{err: q.err}
 	}
 	t := &Iterator{
 		ctx:    ctx,
-		client: c,
 		limit:  q.limit,
 		q:      q,
 		prevCC: q.start,
@@ -567,7 +565,7 @@ func (c *Client) Run(ctx context.Context, q *Query) *Iterator {
 		t.err = err
 		return t
 	}
-	if err := c.call(ctx, "runQuery", &t.req, &t.res); err != nil {
+	if err := call(ctx, "runQuery", &t.req, &t.res); err != nil {
 		t.err = err
 		return t
 	}
@@ -576,7 +574,7 @@ func (c *Client) Run(ctx context.Context, q *Query) *Iterator {
 	for offset > 0 && b.GetMoreResults() == pb.QueryResultBatch_NOT_FINISHED {
 		t.prevCC = b.GetEndCursor()
 		var err error
-		if err = callNext(t.ctx, c, &t.req, &t.res, offset, t.limit); err != nil {
+		if err = callNext(t.ctx, &t.req, &t.res, offset, t.limit); err != nil {
 			t.err = err
 			break
 		}
@@ -595,9 +593,8 @@ func (c *Client) Run(ctx context.Context, q *Query) *Iterator {
 
 // Iterator is the result of running a query.
 type Iterator struct {
-	ctx    context.Context
-	client *Client
-	err    error
+	ctx context.Context
+	err error
 	// req is the request we sent previously, we need to keep track of it to resend it
 	req pb.RunQueryRequest
 	// res is the result of the most recent RunQuery or Next API call.
@@ -647,7 +644,7 @@ func (t *Iterator) next() (*Key, *pb.Entity, error) {
 			return nil, nil, t.err
 		}
 		t.prevCC = b.GetEndCursor()
-		if err := callNext(t.ctx, t.client, &t.req, &t.res, 0, t.limit); err != nil {
+		if err := callNext(t.ctx, &t.req, &t.res, 0, t.limit); err != nil {
 			t.err = err
 			return nil, nil, t.err
 		}
@@ -712,7 +709,7 @@ func (t *Iterator) Cursor() (Cursor, error) {
 	q.offset = skipped + int32(t.i)
 	q.limit = 0
 	q.keysOnly = len(q.projection) == 0
-	t1 := t.client.Run(t.ctx, t.q)
+	t1 := q.Run(t.ctx)
 	_, _, err := t1.next()
 	if err != Done {
 		if err == nil {

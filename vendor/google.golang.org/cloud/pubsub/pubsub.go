@@ -27,13 +27,11 @@ import (
 	"net/http"
 	"time"
 
-	"google.golang.org/api/googleapi"
-	raw "google.golang.org/api/pubsub/v1"
-	"google.golang.org/cloud"
 	"google.golang.org/cloud/internal"
-	"google.golang.org/cloud/internal/transport"
 
 	"golang.org/x/net/context"
+	"google.golang.org/api/googleapi"
+	raw "google.golang.org/api/pubsub/v1beta2"
 )
 
 const (
@@ -45,9 +43,6 @@ const (
 	// across Google Cloud Platform services.
 	ScopeCloudPlatform = "https://www.googleapis.com/auth/cloud-platform"
 )
-
-const prodAddr = "https://pubsub.googleapis.com/"
-const userAgent = "gcloud-golang-pubsub/20151008"
 
 // batchLimit is maximun size of a single batch.
 const batchLimit = 1000
@@ -66,40 +61,6 @@ type Message struct {
 	// Attributes represents the key-value pairs the current message
 	// is labelled with.
 	Attributes map[string]string
-}
-
-// Client is a Google Pub/Sub client, which may be used to perform Pub/Sub operations with a project.
-// Note: Some operations are not yet available via Client, and must be performed via the legacy standalone functions.
-// It must be constructed via NewClient.
-type Client struct {
-	projectID string
-	s         *raw.Service
-}
-
-// NewClient create a new PubSub client.
-func NewClient(ctx context.Context, projectID string, opts ...cloud.ClientOption) (*Client, error) {
-	o := []cloud.ClientOption{
-		cloud.WithEndpoint(prodAddr),
-		cloud.WithScopes(raw.PubsubScope, raw.CloudPlatformScope),
-		cloud.WithUserAgent(userAgent),
-	}
-	o = append(o, opts...)
-	httpClient, endpoint, err := transport.NewHTTPClient(ctx, o...)
-	if err != nil {
-		return nil, fmt.Errorf("dialing: %v", err)
-	}
-	s, err := raw.New(httpClient)
-	if err != nil {
-		return nil, err
-	}
-
-	s.BasePath = endpoint
-	c := &Client{
-		projectID: projectID,
-		s:         s,
-	}
-
-	return c, nil
 }
 
 // TODO(jbd): Add subscription and topic listing.
@@ -153,7 +114,7 @@ func ModifyAckDeadline(ctx context.Context, sub string, id string, deadline time
 	}
 	_, err := rawService(ctx).Projects.Subscriptions.ModifyAckDeadline(fullSubName(internal.ProjID(ctx), sub), &raw.ModifyAckDeadlineRequest{
 		AckDeadlineSeconds: int64(deadline / time.Second),
-		AckIds:             []string{id},
+		AckId:              id,
 	}).Do()
 	return err
 }
@@ -212,14 +173,16 @@ func toMessage(resp *raw.ReceivedMessage) (*Message, error) {
 	}, nil
 }
 
-// Pull pulls up to n messages from the subscription. n must not be larger than 100.
+// Pull pulls messages from the subscription. It returns up to n
+// number of messages, and n could not be larger than 100.
 func Pull(ctx context.Context, sub string, n int) ([]*Message, error) {
 	return pull(ctx, sub, n, true)
 }
 
-// PullWait pulls up to n messages from the subscription. If there are no
-// messages in the queue, it will wait until at least one message is
-// available or a timeout occurs. n must not be larger than 100.
+// PullWait pulls messages from the subscription. If there are not
+// enough messages left in the subscription queue, it will block until
+// at least n number of messages arrive or timeout occurs, and n could
+// not be larger than 100.
 func PullWait(ctx context.Context, sub string, n int) ([]*Message, error) {
 	return pull(ctx, sub, n, false)
 }

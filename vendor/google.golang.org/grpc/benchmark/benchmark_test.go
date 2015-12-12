@@ -7,9 +7,10 @@ import (
 	"time"
 
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
 	testpb "google.golang.org/grpc/benchmark/grpc_testing"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/benchmark/stats"
+	"google.golang.org/grpc/grpclog"
 )
 
 func runUnary(b *testing.B, maxConcurrentCalls int) {
@@ -34,7 +35,7 @@ func runUnary(b *testing.B, maxConcurrentCalls int) {
 	// Distribute the b.N calls over maxConcurrentCalls workers.
 	for i := 0; i < maxConcurrentCalls; i++ {
 		go func() {
-			for range ch {
+			for _ = range ch {
 				start := time.Now()
 				unaryCaller(tc)
 				elapse := time.Since(start)
@@ -66,7 +67,7 @@ func runStream(b *testing.B, maxConcurrentCalls int) {
 	// Warm up connection.
 	stream, err := tc.StreamingCall(context.Background())
 	if err != nil {
-		b.Fatalf("%v.StreamingCall(_) = _, %v", tc, err)
+		grpclog.Fatalf("%v.StreamingCall(_) = _, %v", tc, err)
 	}
 	for i := 0; i < 10; i++ {
 		streamCaller(tc, stream)
@@ -84,9 +85,9 @@ func runStream(b *testing.B, maxConcurrentCalls int) {
 		go func() {
 			stream, err := tc.StreamingCall(context.Background())
 			if err != nil {
-				b.Fatalf("%v.StreamingCall(_) = _, %v", tc, err)
+				grpclog.Fatalf("%v.StreamingCall(_) = _, %v", tc, err)
 			}
-			for range ch {
+			for _ = range ch {
 				start := time.Now()
 				streamCaller(tc, stream)
 				elapse := time.Since(start)

@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"golang.org/x/net/context"
-	raw "google.golang.org/api/container/v1"
+	raw "google.golang.org/api/container/v1beta1"
 	"google.golang.org/cloud/internal"
 )
 
@@ -94,7 +94,8 @@ type Resource struct {
 	// If none set, the default type is used while creating a new cluster.
 	MachineType string
 
-	// This field is ignored. It was removed from the underlying container API in v1.
+	// SourceImage is the fully-specified name of a Google Compute Engine image.
+	// For example: https://www.googleapis.com/compute/v1/projects/debian-cloud/global/images/backports-debian-7-wheezy-vYYYYMMDD.
 	SourceImage string
 
 	// Created is the creation time of this cluster.
@@ -110,16 +111,17 @@ func resourceFromRaw(c *raw.Cluster) *Resource {
 		Description:       c.Description,
 		Zone:              c.Zone,
 		Status:            Status(c.Status),
-		Num:               c.InitialNodeCount,
-		APIVersion:        c.InitialClusterVersion,
+		Num:               c.NumNodes,
+		APIVersion:        c.ClusterApiVersion,
 		Endpoint:          c.Endpoint,
-		Username:          c.MasterAuth.Username,
+		Username:          c.MasterAuth.User,
 		Password:          c.MasterAuth.Password,
-		ContainerIPv4CIDR: c.ClusterIpv4Cidr,
+		ContainerIPv4CIDR: c.ContainerIpv4Cidr,
 		ServicesIPv4CIDR:  c.ServicesIpv4Cidr,
 		MachineType:       c.NodeConfig.MachineType,
+		SourceImage:       c.NodeConfig.SourceImage,
 	}
-	r.Created, _ = time.Parse(time.RFC3339, c.CreateTime)
+	r.Created, _ = time.Parse(time.RFC3339, c.CreationTimestamp)
 	return r
 }
 
@@ -139,7 +141,8 @@ type Op struct {
 	// Zone is the Google Compute Engine zone.
 	Zone string
 
-	// This field is ignored. It was removed from the underlying container API in v1.
+	// TargetURL is the URL of the cluster resource
+	// that this operation is associated with.
 	TargetURL string
 
 	// Type is the operation type. It could be either be TypeCreate or TypeDelete.
@@ -155,10 +158,11 @@ func opFromRaw(o *raw.Operation) *Op {
 		return nil
 	}
 	return &Op{
-		Name:   o.Name,
-		Zone:   o.Zone,
-		Type:   Type(o.OperationType),
-		Status: Status(o.Status),
+		Name:      o.Name,
+		Zone:      o.Zone,
+		TargetURL: o.Target,
+		Type:      Type(o.OperationType),
+		Status:    Status(o.Status),
 	}
 }
 
@@ -175,7 +179,7 @@ func opsFromRaw(o []*raw.Operation) []*Op {
 func Clusters(ctx context.Context, zone string) ([]*Resource, error) {
 	s := rawService(ctx)
 	if zone == "" {
-		resp, err := s.Projects.Zones.Clusters.List(internal.ProjID(ctx), "-").Do()
+		resp, err := s.Projects.Clusters.List(internal.ProjID(ctx)).Do()
 		if err != nil {
 			return nil, err
 		}
@@ -217,7 +221,7 @@ func DeleteCluster(ctx context.Context, zone, name string) error {
 func Operations(ctx context.Context, zone string) ([]*Op, error) {
 	s := rawService(ctx)
 	if zone == "" {
-		resp, err := s.Projects.Zones.Operations.List(internal.ProjID(ctx), "-").Do()
+		resp, err := s.Projects.Operations.List(internal.ProjID(ctx)).Do()
 		if err != nil {
 			return nil, err
 		}
@@ -237,8 +241,8 @@ func Operation(ctx context.Context, zone, name string) (*Op, error) {
 	if err != nil {
 		return nil, err
 	}
-	if resp.StatusMessage != "" {
-		return nil, errors.New(resp.StatusMessage)
+	if resp.ErrorMessage != "" {
+		return nil, errors.New(resp.ErrorMessage)
 	}
 	return opFromRaw(resp), nil
 }

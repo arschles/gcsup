@@ -112,13 +112,13 @@ func (j *Job) Status(ctx context.Context) (*JobStatus, error) {
 
 func (j *Job) implementsReadSource() {}
 
-func (j *Job) customizeReadQuery(cursor *readQueryConf) error {
+func (j *Job) customizeReadQuery(conf *readQueryConf) error {
 	// There are mulitple kinds of jobs, but only a query job is suitable for reading.
 	if !j.isQuery {
 		return errors.New("Cannot read from a non-query job")
 	}
 
-	cursor.projectID = j.projectID
-	cursor.jobID = j.jobID
+	conf.projectID = j.projectID
+	conf.jobID = j.jobID
 	return nil
 }

@@ -76,12 +76,13 @@ func TestQuery(t *testing.T) {
 		},
 		{
 			dst: &Table{
-				ProjectID: "project-id",
-				DatasetID: "dataset-id",
-				TableID:   "table-id",
+				ProjectID:         "project-id",
+				DatasetID:         "dataset-id",
+				TableID:           "table-id",
+				CreateDisposition: "CREATE_NEVER",
+				WriteDisposition:  "WRITE_TRUNCATE",
 			},
-			src:     defaultQuery,
-			options: []Option{CreateNever, WriteTruncate},
+			src: defaultQuery,
 			want: func() *bq.Job {
 				j := defaultQueryJob()
 				j.Configuration.Query.WriteDisposition = "WRITE_TRUNCATE"

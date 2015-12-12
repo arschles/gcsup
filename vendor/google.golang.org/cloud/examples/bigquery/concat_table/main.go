@@ -77,13 +77,14 @@ func main() {
 	}
 
 	d := &bigquery.Table{
-		ProjectID: *project,
-		DatasetID: *dataset,
-		TableID:   *dest,
+		ProjectID:        *project,
+		DatasetID:        *dataset,
+		TableID:          *dest,
+		WriteDisposition: bigquery.WriteTruncate,
 	}
 
 	// Concatenate data.
-	job, err := client.Copy(context.Background(), d, bigquery.Tables{s1, s2}, bigquery.WriteTruncate)
+	job, err := client.Copy(context.Background(), d, bigquery.Tables{s1, s2})
 
 	if err != nil {
 		log.Fatalf("Concatenating: %v", err)

@@ -17,9 +17,7 @@
 package datastore
 
 import (
-	"errors"
 	"fmt"
-	"log"
 
 	"reflect"
 	"sort"
@@ -28,21 +26,8 @@ import (
 	"time"
 
 	"golang.org/x/net/context"
-	"google.golang.org/cloud"
 	"google.golang.org/cloud/internal/testutil"
 )
-
-// TODO(djd): Make test entity clean up more robust: some test entities may
-// be left behind if tests are aborted, the transport fails, etc.
-
-func newClient(ctx context.Context) *Client {
-	ts := testutil.TokenSource(ctx, ScopeDatastore, ScopeUserEmail)
-	client, err := NewClient(ctx, testutil.ProjID(), cloud.WithTokenSource(ts))
-	if err != nil {
-		log.Fatal(err)
-	}
-	return client
-}
 
 func TestBasics(t *testing.T) {
 	type X struct {
@@ -50,21 +35,20 @@ func TestBasics(t *testing.T) {
 		S string
 		T time.Time
 	}
-	ctx := context.Background()
-	client := newClient(ctx)
+	c := testutil.Context(ScopeDatastore, ScopeUserEmail)
 	x0 := X{66, "99", time.Now().Truncate(time.Millisecond)}
-	k, err := client.Put(ctx, NewIncompleteKey(ctx, "BasicsX", nil), &x0)
+	k, err := Put(c, NewIncompleteKey(c, "BasicsX", nil), &x0)
 	if err != nil {
-		t.Fatalf("client.Put: %v", err)
+		t.Fatalf("Put: %v", err)
 	}
 	x1 := X{}
-	err = client.Get(ctx, k, &x1)
+	err = Get(c, k, &x1)
 	if err != nil {
-		t.Errorf("client.Get: %v", err)
+		t.Errorf("Get: %v", err)
 	}
-	err = client.Delete(ctx, k)
+	err = Delete(c, k)
 	if err != nil {
-		t.Errorf("client.Delete: %v", err)
+		t.Errorf("Delete: %v", err)
 	}
 	if !reflect.DeepEqual(x0, x1) {
 		t.Errorf("compare: x0=%v, x1=%v", x0, x1)
@@ -77,21 +61,20 @@ func TestListValues(t *testing.T) {
 		{Name: "L", Value: "string", Multiple: true},
 		{Name: "L", Value: true, Multiple: true},
 	}
-	ctx := context.Background()
-	client := newClient(ctx)
-	k, err := client.Put(ctx, NewIncompleteKey(ctx, "ListValue", nil), &p0)
+	c := testutil.Context(ScopeDatastore, ScopeUserEmail)
+	k, err := Put(c, NewIncompleteKey(c, "ListValue", nil), &p0)
 	if err != nil {
-		t.Fatalf("client.Put: %v", err)
+		t.Fatalf("Put: %v", err)
 	}
 	var p1 PropertyList
-	if err := client.Get(ctx, k, &p1); err != nil {
-		t.Errorf("client.Get: %v", err)
+	if err := Get(c, k, &p1); err != nil {
+		t.Errorf("Get: %v", err)
 	}
 	if !reflect.DeepEqual(p0, p1) {
 		t.Errorf("compare:\np0=%v\np1=%#v", p0, p1)
 	}
-	if err = client.Delete(ctx, k); err != nil {
-		t.Errorf("client.Delete: %v", err)
+	if err = Delete(c, k); err != nil {
+		t.Errorf("Delete: %v", err)
 	}
 }
 
@@ -99,18 +82,17 @@ func TestGetMulti(t *testing.T) {
 	type X struct {
 		I int
 	}
-	ctx := context.Background()
-	client := newClient(ctx)
-	p := NewKey(ctx, "X", "", time.Now().Unix(), nil)
+	c := testutil.Context(ScopeDatastore, ScopeUserEmail)
+	p := NewKey(c, "X", "", time.Now().Unix(), nil)
 
 	cases := []struct {
 		key *Key
 		put bool
 	}{
-		{key: NewKey(ctx, "X", "item1", 0, p), put: true},
-		{key: NewKey(ctx, "X", "item2", 0, p), put: false},
-		{key: NewKey(ctx, "X", "item3", 0, p), put: false},
-		{key: NewKey(ctx, "X", "item4", 0, p), put: true},
+		{key: NewKey(c, "X", "item1", 0, p), put: true},
+		{key: NewKey(c, "X", "item2", 0, p), put: false},
+		{key: NewKey(c, "X", "item3", 0, p), put: false},
+		{key: NewKey(c, "X", "item4", 0, p), put: true},
 	}
 
 	var src, dst []*X
@@ -123,16 +105,16 @@ func TestGetMulti(t *testing.T) {
 			srcKeys = append(srcKeys, c.key)
 		}
 	}
-	if _, err := client.PutMulti(ctx, srcKeys, src); err != nil {
+	if _, err := PutMulti(c, srcKeys, src); err != nil {
 		t.Error(err)
 	}
-	err := client.GetMulti(ctx, dstKeys, dst)
+	err := GetMulti(c, dstKeys, dst)
 	if err == nil {
-		t.Errorf("client.GetMulti got %v, expected error", err)
+		t.Errorf("GetMulti got %v, expected error", err)
 	}
 	e, ok := err.(MultiError)
 	if !ok {
-		t.Errorf("client.GetMulti got %t, expected MultiError", err)
+		t.Errorf("GetMulti got %t, expected MultiError", err)
 	}
 	for i, err := range e {
 		got, want := err, (error)(nil)
@@ -179,12 +161,11 @@ func TestUnindexableValues(t *testing.T) {
 		{in: Z{K: []byte(x1500)}, wantErr: false},
 		{in: Z{K: []byte(x1501)}, wantErr: false},
 	}
-	ctx := context.Background()
-	client := newClient(ctx)
+	c := testutil.Context(ScopeDatastore, ScopeUserEmail)
 	for _, tt := range testCases {
-		_, err := client.Put(ctx, NewIncompleteKey(ctx, "BasicsZ", nil), &tt.in)
+		_, err := Put(c, NewIncompleteKey(c, "BasicsZ", nil), &tt.in)
 		if (err != nil) != tt.wantErr {
-			t.Errorf("client.Put %s got err %v, want err %t", tt.in, err, tt.wantErr)
+			t.Errorf("Put %s got err %v, want err %t", tt.in, err, tt.wantErr)
 		}
 	}
 }
@@ -201,25 +182,25 @@ type SQTestCase struct {
 	wantSum   int
 }
 
-func testSmallQueries(t *testing.T, ctx context.Context, client *Client, parent *Key, children []*SQChild,
+func testSmallQueries(t *testing.T, c context.Context, parent *Key, children []*SQChild,
 	testCases []SQTestCase, extraTests ...func()) {
 	keys := make([]*Key, len(children))
 	for i := range keys {
-		keys[i] = NewIncompleteKey(ctx, "SQChild", parent)
+		keys[i] = NewIncompleteKey(c, "SQChild", parent)
 	}
-	keys, err := client.PutMulti(ctx, keys, children)
+	keys, err := PutMulti(c, keys, children)
 	if err != nil {
-		t.Fatalf("client.PutMulti: %v", err)
+		t.Fatalf("PutMulti: %v", err)
 	}
 	defer func() {
-		err := client.DeleteMulti(ctx, keys)
+		err := DeleteMulti(c, keys)
 		if err != nil {
-			t.Errorf("client.DeleteMulti: %v", err)
+			t.Errorf("DeleteMulti: %v", err)
 		}
 	}()
 
 	for _, tc := range testCases {
-		count, err := client.Count(ctx, tc.q)
+		count, err := tc.q.Count(c)
 		if err != nil {
 			t.Errorf("Count %q: %v", tc.desc, err)
 			continue
@@ -232,9 +213,9 @@ func testSmallQueries(t *testing.T, ctx context.Context, client *Client, parent 
 
 	for _, tc := range testCases {
 		var got []SQChild
-		_, err := client.GetAll(ctx, tc.q, &got)
+		_, err := tc.q.GetAll(c, &got)
 		if err != nil {
-			t.Errorf("client.GetAll %q: %v", tc.desc, err)
+			t.Errorf("GetAll %q: %v", tc.desc, err)
 			continue
 		}
 		sum := 0
@@ -252,9 +233,8 @@ func testSmallQueries(t *testing.T, ctx context.Context, client *Client, parent 
 }
 
 func TestFilters(t *testing.T) {
-	ctx := context.Background()
-	client := newClient(ctx)
-	parent := NewKey(ctx, "SQParent", "TestFilters", 0, nil)
+	c := testutil.Context(ScopeDatastore, ScopeUserEmail)
+	parent := NewKey(c, "SQParent", "TestFilters", 0, nil)
 	now := time.Now().Truncate(time.Millisecond).Unix()
 	children := []*SQChild{
 		{I: 0, T: now, U: now},
@@ -267,7 +247,7 @@ func TestFilters(t *testing.T) {
 		{I: 7, T: now, U: now},
 	}
 	baseQuery := NewQuery("SQChild").Ancestor(parent).Filter("T=", now)
-	testSmallQueries(t, ctx, client, parent, children, []SQTestCase{
+	testSmallQueries(t, c, parent, children, []SQTestCase{
 		{
 			"I>1",
 			baseQuery.Filter("I>", 1),
@@ -304,9 +284,9 @@ func TestFilters(t *testing.T) {
 			{I: 6, T: now, U: now},
 			{I: 7, T: now, U: now},
 		}
-		_, err := client.GetAll(ctx, baseQuery.Order("I"), &got)
+		_, err := baseQuery.Order("I").GetAll(c, &got)
 		if err != nil {
-			t.Errorf("client.GetAll: %v", err)
+			t.Errorf("GetAll: %v", err)
 		}
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("compare: got=%v, want=%v", got, want)
@@ -323,9 +303,9 @@ func TestFilters(t *testing.T) {
 			{I: 1, T: now, U: now},
 			{I: 0, T: now, U: now},
 		}
-		_, err := client.GetAll(ctx, baseQuery.Order("-I"), &got)
+		_, err := baseQuery.Order("-I").GetAll(c, &got)
 		if err != nil {
-			t.Errorf("client.GetAll: %v", err)
+			t.Errorf("GetAll: %v", err)
 		}
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("compare: got=%v, want=%v", got, want)
@@ -334,9 +314,8 @@ func TestFilters(t *testing.T) {
 }
 
 func TestEventualConsistency(t *testing.T) {
-	ctx := context.Background()
-	client := newClient(ctx)
-	parent := NewKey(ctx, "SQParent", "TestEventualConsistency", 0, nil)
+	c := testutil.Context(ScopeDatastore, ScopeUserEmail)
+	parent := NewKey(c, "SQParent", "TestEventualConsistency", 0, nil)
 	now := time.Now().Truncate(time.Millisecond).Unix()
 	children := []*SQChild{
 		{I: 0, T: now, U: now},
@@ -344,8 +323,8 @@ func TestEventualConsistency(t *testing.T) {
 		{I: 2, T: now, U: now},
 	}
 	query := NewQuery("SQChild").Ancestor(parent).Filter("T =", now).EventualConsistency()
-	testSmallQueries(t, ctx, client, parent, children, nil, func() {
-		got, err := client.Count(ctx, query)
+	testSmallQueries(t, c, parent, children, nil, func() {
+		got, err := query.Count(c)
 		if err != nil {
 			t.Fatalf("Count: %v", err)
 		}
@@ -356,9 +335,8 @@ func TestEventualConsistency(t *testing.T) {
 }
 
 func TestProjection(t *testing.T) {
-	ctx := context.Background()
-	client := newClient(ctx)
-	parent := NewKey(ctx, "SQParent", "TestProjection", 0, nil)
+	c := testutil.Context(ScopeDatastore, ScopeUserEmail)
+	parent := NewKey(c, "SQParent", "TestProjection", 0, nil)
 	now := time.Now().Truncate(time.Millisecond).Unix()
 	children := []*SQChild{
 		{I: 1 << 0, J: 100, T: now, U: now},
@@ -368,7 +346,7 @@ func TestProjection(t *testing.T) {
 		{I: 1 << 4, J: 300, T: now, U: now},
 	}
 	baseQuery := NewQuery("SQChild").Ancestor(parent).Filter("T=", now).Filter("J>", 150)
-	testSmallQueries(t, ctx, client, parent, children, []SQTestCase{
+	testSmallQueries(t, c, parent, children, []SQTestCase{
 		{
 			"project",
 			baseQuery.Project("J"),
@@ -391,13 +369,12 @@ func TestProjection(t *testing.T) {
 }
 
 func TestAllocateIDs(t *testing.T) {
-	ctx := context.Background()
-	client := newClient(ctx)
+	c := testutil.Context(ScopeDatastore, ScopeUserEmail)
 	keys := make([]*Key, 5)
 	for i := range keys {
-		keys[i] = NewIncompleteKey(ctx, "AllocID", nil)
+		keys[i] = NewIncompleteKey(c, "AllocID", nil)
 	}
-	keys, err := client.AllocateIDs(ctx, keys)
+	keys, err := AllocateIDs(c, keys)
 	if err != nil {
 		t.Errorf("AllocID #0 failed: %v", err)
 	}
@@ -419,19 +396,18 @@ func TestGetAllWithFieldMismatch(t *testing.T) {
 		X int
 	}
 
-	ctx := context.Background()
-	client := newClient(ctx)
+	c := testutil.Context(ScopeDatastore, ScopeUserEmail)
 	// Ancestor queries (those within an entity group) are strongly consistent
 	// by default, which prevents a test from being flaky.
 	// See https://cloud.google.com/appengine/docs/go/datastore/queries#Go_Data_consistency
 	// for more information.
-	parent := NewKey(ctx, "SQParent", "TestGetAllWithFieldMismatch", 0, nil)
+	parent := NewKey(c, "SQParent", "TestGetAllWithFieldMismatch", 0, nil)
 	putKeys := make([]*Key, 3)
 	for i := range putKeys {
-		putKeys[i] = NewKey(ctx, "GetAllThing", "", int64(10+i), parent)
-		_, err := client.Put(ctx, putKeys[i], &Fat{X: 20 + i, Y: 30 + i})
+		putKeys[i] = NewKey(c, "GetAllThing", "", int64(10+i), parent)
+		_, err := Put(c, putKeys[i], &Fat{X: 20 + i, Y: 30 + i})
 		if err != nil {
-			t.Fatalf("client.Put: %v", err)
+			t.Fatalf("Put: %v", err)
 		}
 	}
 
@@ -441,15 +417,15 @@ func TestGetAllWithFieldMismatch(t *testing.T) {
 		{X: 21},
 		{X: 22},
 	}
-	getKeys, err := client.GetAll(ctx, NewQuery("GetAllThing").Ancestor(parent), &got)
+	getKeys, err := NewQuery("GetAllThing").Ancestor(parent).GetAll(c, &got)
 	if len(getKeys) != 3 && !reflect.DeepEqual(getKeys, putKeys) {
-		t.Errorf("client.GetAll: keys differ\ngetKeys=%v\nputKeys=%v", getKeys, putKeys)
+		t.Errorf("GetAll: keys differ\ngetKeys=%v\nputKeys=%v", getKeys, putKeys)
 	}
 	if !reflect.DeepEqual(got, want) {
-		t.Errorf("client.GetAll: entities differ\ngot =%v\nwant=%v", got, want)
+		t.Errorf("GetAll: entities differ\ngot =%v\nwant=%v", got, want)
 	}
 	if _, ok := err.(*ErrFieldMismatch); !ok {
-		t.Errorf("client.GetAll: got err=%v, want ErrFieldMismatch", err)
+		t.Errorf("GetAll: got err=%v, want ErrFieldMismatch", err)
 	}
 }
 
@@ -463,15 +439,14 @@ func TestKindlessQueries(t *testing.T) {
 		Pling string
 	}
 
-	ctx := context.Background()
-	client := newClient(ctx)
-	parent := NewKey(ctx, "Tweedle", "tweedle", 0, nil)
+	c := testutil.Context(ScopeDatastore, ScopeUserEmail)
+	parent := NewKey(c, "Tweedle", "tweedle", 0, nil)
 
 	keys := []*Key{
-		NewKey(ctx, "Dee", "dee0", 0, parent),
-		NewKey(ctx, "Dum", "dum1", 0, parent),
-		NewKey(ctx, "Dum", "dum2", 0, parent),
-		NewKey(ctx, "Dum", "dum3", 0, parent),
+		NewKey(c, "Dee", "dee0", 0, parent),
+		NewKey(c, "Dum", "dum1", 0, parent),
+		NewKey(c, "Dum", "dum2", 0, parent),
+		NewKey(c, "Dum", "dum3", 0, parent),
 	}
 	src := []interface{}{
 		&Dee{1, "binary0001"},
@@ -479,7 +454,7 @@ func TestKindlessQueries(t *testing.T) {
 		&Dum{4, "binary0100"},
 		&Dum{8, "binary1000"},
 	}
-	keys, err := client.PutMulti(ctx, keys, src)
+	keys, err := PutMulti(c, keys, src)
 	if err != nil {
 		t.Fatalf("put: %v", err)
 	}
@@ -533,7 +508,7 @@ func TestKindlessQueries(t *testing.T) {
 loop:
 	for _, tc := range testCases {
 		q := tc.query.Ancestor(parent)
-		gotCount, err := client.Count(ctx, q)
+		gotCount, err := q.Count(c)
 		if err != nil {
 			if tc.wantErr == "" || !strings.Contains(err.Error(), tc.wantErr) {
 				t.Errorf("count %q: err %v, want err %q", tc.desc, err, tc.wantErr)
@@ -549,7 +524,7 @@ loop:
 			continue
 		}
 		var got []int
-		for iter := client.Run(ctx, q); ; {
+		for iter := q.Run(c); ; {
 			var dst struct {
 				I          int
 				Why, Pling string
@@ -568,108 +543,6 @@ loop:
 		if !reflect.DeepEqual(got, tc.want) {
 			t.Errorf("elems %q: got %+v want %+v", tc.desc, got, tc.want)
 			continue
-		}
-	}
-}
-
-func TestTransaction(t *testing.T) {
-	ctx := context.Background()
-	client := newClient(ctx)
-
-	type Counter struct {
-		N int
-		T time.Time
-	}
-
-	bangErr := errors.New("bang")
-	tests := []struct {
-		desc          string
-		causeConflict []bool
-		retErr        []error
-		want          int
-		wantErr       error
-	}{
-		{
-			desc:          "no conflicts",
-			causeConflict: []bool{false},
-			retErr:        []error{nil},
-			want:          11,
-		},
-		{
-			desc:          "user error",
-			causeConflict: []bool{false},
-			retErr:        []error{bangErr},
-			wantErr:       bangErr,
-		},
-		{
-			desc:          "2 conflicts",
-			causeConflict: []bool{true, true, false},
-			retErr:        []error{nil, nil, nil},
-			want:          15, // Each conflict increments by 2.
-		},
-		{
-			desc:          "3 conflicts",
-			causeConflict: []bool{true, true, true},
-			retErr:        []error{nil, nil, nil},
-			wantErr:       ErrConcurrentTransaction,
-		},
-	}
-
-	for _, tt := range tests {
-		// Put a new counter.
-		c := &Counter{N: 10, T: time.Now()}
-		key, err := client.Put(ctx, NewIncompleteKey(ctx, "TransCounter", nil), c)
-		if err != nil {
-			t.Errorf("%s: client.Put: %v", tt.desc, err)
-			continue
-		}
-		defer client.Delete(ctx, key)
-
-		// Increment the counter in a transaction.
-		// The test case can manually cause a conflict or return an
-		// error at each attempt.
-		var attempts int
-		_, err = client.RunInTransaction(ctx, func(tx *Transaction) error {
-			attempts++
-			if attempts > len(tt.causeConflict) {
-				return fmt.Errorf("too many attempts. Got %d, max %d", attempts, len(tt.causeConflict))
-			}
-
-			var c Counter
-			if err := tx.Get(key, &c); err != nil {
-				return err
-			}
-			c.N++
-			if _, err := tx.Put(key, &c); err != nil {
-				return err
-			}
-
-			if tt.causeConflict[attempts-1] {
-				c.N += 1
-				if _, err := client.Put(ctx, key, &c); err != nil {
-					return err
-				}
-			}
-
-			return tt.retErr[attempts-1]
-		})
-
-		// Check the error returned by RunInTransaction.
-		if err != tt.wantErr {
-			t.Errorf("%s: got err %v, want %v", tt.desc, err, tt.wantErr)
-			continue
-		}
-		if err != nil {
-			continue
-		}
-
-		// Check the final value of the counter.
-		if err := client.Get(ctx, key, c); err != nil {
-			t.Errorf("%s: client.Get: %v", err)
-			continue
-		}
-		if c.N != tt.want {
-			t.Errorf("%s: counter N=%d, want N=%d", c.N, tt.want)
 		}
 	}
 }

@@ -32,18 +32,10 @@ const (
 	envPrivateKey = "GCLOUD_TESTS_GOLANG_KEY"
 )
 
-func ProjID() string {
-	projID := os.Getenv(envProjID)
-	if projID == "" {
-		log.Fatal(envProjID + " must be set. See CONTRIBUTING.md for details.")
-	}
-	return projID
-}
-
-func TokenSource(ctx context.Context, scopes ...string) oauth2.TokenSource {
-	key := os.Getenv(envPrivateKey)
-	if key == "" {
-		log.Fatal(envPrivateKey + " must be set. See CONTRIBUTING.md for details.")
+func Context(scopes ...string) context.Context {
+	key, projID := os.Getenv(envPrivateKey), os.Getenv(envProjID)
+	if key == "" || projID == "" {
+		log.Fatal("GCLOUD_TESTS_GOLANG_KEY and GCLOUD_TESTS_GOLANG_PROJECT_ID must be set. See CONTRIBUTING.md for details.")
 	}
 	jsonKey, err := ioutil.ReadFile(key)
 	if err != nil {
@@ -51,19 +43,15 @@ func TokenSource(ctx context.Context, scopes ...string) oauth2.TokenSource {
 	}
 	conf, err := google.JWTConfigFromJSON(jsonKey, scopes...)
 	if err != nil {
-		log.Fatalf("google.JWTConfigFromJSON: %v", err)
+		log.Fatal(err)
 	}
-	return conf.TokenSource(ctx)
+	return cloud.NewContext(projID, conf.Client(oauth2.NoContext))
 }
 
-// TODO(djd): Delete this function when it's no longer used.
-func Context(scopes ...string) context.Context {
-	ctx := oauth2.NoContext
-	ts := TokenSource(ctx, scopes...)
-	return cloud.NewContext(ProjID(), oauth2.NewClient(ctx, ts))
-}
-
-// TODO(djd): Delete this function when it's no longer used.
 func NoAuthContext() context.Context {
-	return cloud.NewContext(ProjID(), &http.Client{Transport: http.DefaultTransport})
+	projID := os.Getenv(envProjID)
+	if projID == "" {
+		log.Fatal("GCLOUD_TESTS_GOLANG_PROJECT_ID must be set. See CONTRIBUTING.md for details.")
+	}
+	return cloud.NewContext(projID, &http.Client{Transport: http.DefaultTransport})
 }
