@@ -12,7 +12,7 @@ bootstrap:
 	${DEV_ENV_CMD} glide up
 
 build:
-	${DEV_ENV_PREFIX} go build -o gcsup
+	${DEV_ENV_CMD} go build -o gcsup
 
 test:
 	${DEV_ENV_CMD} go test ${glide nv}
