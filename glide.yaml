@@ -2,12 +2,12 @@ package: main
 import:
   - package: github.com/golang/protobuf
     version: ab974be44dc3b7b8a1fb306fb32fe9b9f3864b3d
-  - package: google.golang.org
+  - package: google.golang.org/api
+    version: 91c8b79535eb6045d70ec671d302213f88a3ab95
+  - package: google.golang.org/grpc
     version: 91c8b79535eb6045d70ec671d302213f88a3ab95
     subpackages:
-      - /api
-      - /grpc
-      - /grpc/credentials/oauth
+      - /credentials/oauth
   - package: google.golang.org/cloud
     version: 87a8821aafd434304c9fea89a9484c2fdd7aea15
     subpackages:
