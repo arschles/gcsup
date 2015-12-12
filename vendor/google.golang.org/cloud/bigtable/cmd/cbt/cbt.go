@@ -33,9 +33,9 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/net/context"
-	"github.com/arschles/gcsup/Godeps/_workspace/src/google.golang.org/cloud/bigtable"
-	"github.com/arschles/gcsup/Godeps/_workspace/src/google.golang.org/cloud/bigtable/internal/cbtrc"
+	"golang.org/x/net/context"
+	"google.golang.org/cloud/bigtable"
+	"google.golang.org/cloud/bigtable/internal/cbtrc"
 )
 
 var (

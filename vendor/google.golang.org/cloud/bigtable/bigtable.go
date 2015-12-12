@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package bigtable
+package bigtable // import "google.golang.org/cloud/bigtable"
 
 import (
 	"fmt"
@@ -22,12 +22,13 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/arschles/gcsup/Godeps/_workspace/src/github.com/golang/protobuf/proto"
-	"github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/net/context"
-	"github.com/arschles/gcsup/Godeps/_workspace/src/google.golang.org/cloud"
-	btdpb "github.com/arschles/gcsup/Godeps/_workspace/src/google.golang.org/cloud/bigtable/internal/data_proto"
-	btspb "github.com/arschles/gcsup/Godeps/_workspace/src/google.golang.org/cloud/bigtable/internal/service_proto"
-	"github.com/arschles/gcsup/Godeps/_workspace/src/google.golang.org/grpc"
+	"github.com/golang/protobuf/proto"
+	"golang.org/x/net/context"
+	"google.golang.org/cloud"
+	btdpb "google.golang.org/cloud/bigtable/internal/data_proto"
+	btspb "google.golang.org/cloud/bigtable/internal/service_proto"
+	"google.golang.org/cloud/internal/transport"
+	"google.golang.org/grpc"
 )
 
 const prodAddr = "bigtable.googleapis.com:443"
@@ -45,9 +46,10 @@ func NewClient(ctx context.Context, project, zone, cluster string, opts ...cloud
 	o := []cloud.ClientOption{
 		cloud.WithEndpoint(prodAddr),
 		cloud.WithScopes(Scope),
+		cloud.WithUserAgent(clientUserAgent),
 	}
 	o = append(o, opts...)
-	conn, err := cloud.DialGRPC(ctx, o...)
+	conn, err := transport.DialGRPC(ctx, o...)
 	if err != nil {
 		return nil, fmt.Errorf("dialing: %v", err)
 	}
@@ -95,12 +97,13 @@ func (c *Client) Open(table string) *Table {
 func (t *Table) ReadRows(ctx context.Context, arg RowRange, f func(Row) bool, opts ...ReadOption) error {
 	req := &btspb.ReadRowsRequest{
 		TableName: t.c.fullTableName(t.table),
-		RowRange:  arg.proto(),
+		Target:    &btspb.ReadRowsRequest_RowRange{arg.proto()},
 	}
 	for _, opt := range opts {
 		opt.set(req)
 	}
 	ctx, cancel := context.WithCancel(ctx) // for aborting the stream
+	defer cancel()
 	stream, err := t.c.client.ReadRows(ctx, req)
 	if err != nil {
 		return err
@@ -120,6 +123,8 @@ func (t *Table) ReadRows(ctx context.Context, arg RowRange, f func(Row) bool, op
 				cancel()
 				for {
 					if _, err := stream.Recv(); err != nil {
+						// The stream has ended. We don't return an error
+						// because the caller has intentionally interrupted the scan.
 						return nil
 					}
 				}
@@ -157,16 +162,21 @@ func (cr *chunkReader) process(rrr *btspb.ReadRowsResponse) Row {
 		cr.partial[row] = r
 	}
 	for _, chunk := range rrr.Chunks {
-		if chunk.ResetRow {
+		switch c := chunk.Chunk.(type) {
+		case *btspb.ReadRowsResponse_Chunk_ResetRow:
 			r = make(Row)
 			cr.partial[row] = r
 			continue
-		}
-		if chunk.CommitRow {
+		case *btspb.ReadRowsResponse_Chunk_CommitRow:
 			delete(cr.partial, row)
+			if len(r) == 0 {
+				// Treat zero-content commits as absent.
+				continue
+			}
 			return r // assume that this is the last chunk
+		case *btspb.ReadRowsResponse_Chunk_RowContents:
+			decodeFamilyProto(r, row, c.RowContents)
 		}
-		decodeFamilyProto(r, row, chunk.RowContents)
 	}
 	return nil
 }
@@ -407,46 +417,46 @@ func (m *Mutation) Set(family, column string, ts Timestamp, value []byte) {
 		// TODO(dsymonds): Provide a way to override this behaviour.
 		ts -= ts % 1000
 	}
-	m.ops = append(m.ops, &btdpb.Mutation{SetCell: &btdpb.Mutation_SetCell{
+	m.ops = append(m.ops, &btdpb.Mutation{Mutation: &btdpb.Mutation_SetCell_{&btdpb.Mutation_SetCell{
 		FamilyName:      family,
 		ColumnQualifier: []byte(column),
 		TimestampMicros: int64(ts),
 		Value:           value,
-	}})
+	}}})
 }
 
 // DeleteCellsInColumn will delete all the cells whose columns are family:column.
 func (m *Mutation) DeleteCellsInColumn(family, column string) {
-	m.ops = append(m.ops, &btdpb.Mutation{DeleteFromColumn: &btdpb.Mutation_DeleteFromColumn{
+	m.ops = append(m.ops, &btdpb.Mutation{Mutation: &btdpb.Mutation_DeleteFromColumn_{&btdpb.Mutation_DeleteFromColumn{
 		FamilyName:      family,
 		ColumnQualifier: []byte(column),
-	}})
+	}}})
 }
 
 // DeleteTimestampRange deletes all cells whose columns are family:column
 // and whose timestamps are in the half-open interval [start, end).
 // If end is zero, it will be interpreted as infinity.
 func (m *Mutation) DeleteTimestampRange(family, column string, start, end Timestamp) {
-	m.ops = append(m.ops, &btdpb.Mutation{DeleteFromColumn: &btdpb.Mutation_DeleteFromColumn{
+	m.ops = append(m.ops, &btdpb.Mutation{Mutation: &btdpb.Mutation_DeleteFromColumn_{&btdpb.Mutation_DeleteFromColumn{
 		FamilyName:      family,
 		ColumnQualifier: []byte(column),
 		TimeRange: &btdpb.TimestampRange{
 			StartTimestampMicros: int64(start),
 			EndTimestampMicros:   int64(end),
 		},
-	}})
+	}}})
 }
 
 // DeleteCellsInFamily will delete all the cells whose columns are family:*.
 func (m *Mutation) DeleteCellsInFamily(family string) {
-	m.ops = append(m.ops, &btdpb.Mutation{DeleteFromFamily: &btdpb.Mutation_DeleteFromFamily{
+	m.ops = append(m.ops, &btdpb.Mutation{Mutation: &btdpb.Mutation_DeleteFromFamily_{&btdpb.Mutation_DeleteFromFamily{
 		FamilyName: family,
-	}})
+	}}})
 }
 
 // DeleteRow deletes the entire row.
 func (m *Mutation) DeleteRow() {
-	m.ops = append(m.ops, &btdpb.Mutation{DeleteFromRow: &btdpb.Mutation_DeleteFromRow{}})
+	m.ops = append(m.ops, &btdpb.Mutation{Mutation: &btdpb.Mutation_DeleteFromRow_{&btdpb.Mutation_DeleteFromRow{}}})
 }
 
 // Timestamp is in units of microseconds since 1 January 1970.
@@ -505,7 +515,7 @@ func (m *ReadModifyWrite) AppendValue(family, column string, v []byte) {
 	m.ops = append(m.ops, &btdpb.ReadModifyWriteRule{
 		FamilyName:      family,
 		ColumnQualifier: []byte(column),
-		AppendValue:     v,
+		Rule:            &btdpb.ReadModifyWriteRule_AppendValue{v},
 	})
 }
 
@@ -517,6 +527,6 @@ func (m *ReadModifyWrite) Increment(family, column string, delta int64) {
 	m.ops = append(m.ops, &btdpb.ReadModifyWriteRule{
 		FamilyName:      family,
 		ColumnQualifier: []byte(column),
-		IncrementAmount: delta,
+		Rule:            &btdpb.ReadModifyWriteRule_IncrementAmount{delta},
 	})
 }

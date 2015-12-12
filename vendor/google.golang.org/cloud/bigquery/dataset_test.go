@@ -19,7 +19,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/net/context"
+	"golang.org/x/net/context"
 )
 
 // readServiceStub services read requests by returning data from an in-memory list of values.
@@ -46,8 +46,8 @@ func (s *listTablesServiceStub) listTables(ctx context.Context, projectID, datas
 
 func TestListTables(t *testing.T) {
 	t1 := &Table{ProjectID: "p1", DatasetID: "d1", TableID: "t1"}
-	t2 := &Table{ProjectID: "p1", DatasetID: "d1", TableID: "t1"}
-	t3 := &Table{ProjectID: "p1", DatasetID: "d1", TableID: "t1"}
+	t2 := &Table{ProjectID: "p1", DatasetID: "d1", TableID: "t2"}
+	t3 := &Table{ProjectID: "p1", DatasetID: "d1", TableID: "t3"}
 	testCases := []struct {
 		data       [][]*Table
 		pageTokens map[string]string

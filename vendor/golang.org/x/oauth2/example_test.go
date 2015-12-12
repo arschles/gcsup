@@ -1,4 +1,4 @@
-// Copyright 2014 The oauth2 Authors. All rights reserved.
+// Copyright 2014 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/oauth2"
+	"golang.org/x/oauth2"
 )
 
 func ExampleConfig() {

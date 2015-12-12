@@ -17,7 +17,7 @@ package bigquery
 import (
 	"fmt"
 
-	"github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/net/context"
+	"golang.org/x/net/context"
 	bq "google.golang.org/api/bigquery/v2"
 )
 
@@ -25,12 +25,14 @@ type loadOption interface {
 	customizeLoad(conf *bq.JobConfigurationLoad, projectID string)
 }
 
-// A DestinationSchema must be supplied when loading data from Google Cloud Storage into a non-existent table.
+// DestinationSchema returns an Option that specifies the schema to use when loading data into a new table.
+// A DestinationSchema Option must be supplied when loading data from Google Cloud Storage into a non-existent table.
 // Caveat: DestinationSchema is not required if the data being loaded is a datastore backup.
-func DestinationSchema(schema *Schema) Option { return destSchema{Schema: schema} }
+// schema must not be nil.
+func DestinationSchema(schema Schema) Option { return destSchema{Schema: schema} }
 
 type destSchema struct {
-	*Schema
+	Schema
 }
 
 func (opt destSchema) implementsOption() {}

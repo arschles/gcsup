@@ -23,9 +23,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/net/context"
-	"github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/oauth2/google"
-	"github.com/arschles/gcsup/Godeps/_workspace/src/google.golang.org/cloud/bigquery"
+	"golang.org/x/net/context"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/cloud/bigquery"
 )
 
 var (
@@ -61,9 +61,7 @@ func main() {
 		log.Fatalf("Creating bigquery client: %v", err)
 	}
 
-	d := &bigquery.Table{
-		WriteDisposition: bigquery.WriteTruncate,
-	}
+	d := &bigquery.Table{}
 
 	if *dest != "" {
 		d.ProjectID = *project
@@ -78,7 +76,7 @@ func main() {
 	}
 
 	// Query data.
-	job, err := client.Copy(context.Background(), d, query)
+	job, err := client.Copy(context.Background(), d, query, bigquery.WriteTruncate)
 
 	if err != nil {
 		log.Fatalf("Querying: %v", err)

@@ -1,4 +1,4 @@
-// Copyright 2014 The oauth2 Authors. All rights reserved.
+// Copyright 2014 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -11,16 +11,16 @@
 // server.
 //
 // See http://tools.ietf.org/html/draft-ietf-oauth-v2-31#section-4.4
-package clientcredentials
+package clientcredentials // import "golang.org/x/oauth2/clientcredentials"
 
 import (
 	"net/http"
 	"net/url"
 	"strings"
 
-	"github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/net/context"
-	"github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/oauth2"
-	"github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/oauth2/internal"
+	"golang.org/x/net/context"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/internal"
 )
 
 // tokenFromInternal maps an *internal.Token struct into
@@ -66,7 +66,7 @@ type Config struct {
 	Scopes []string
 }
 
-// Token uses client credentials to retreive a token.
+// Token uses client credentials to retrieve a token.
 // The HTTP client to use is derived from the context.
 // If nil, http.DefaultClient is used.
 func (c *Config) Token(ctx context.Context) (*oauth2.Token, error) {

@@ -20,7 +20,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/arschles/gcsup/Godeps/_workspace/src/google.golang.org/cloud"
+	"google.golang.org/cloud"
 )
 
 func TestIsSec(t *testing.T) {

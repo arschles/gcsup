@@ -25,9 +25,9 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/net/context"
-	"github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/oauth2/google"
-	"github.com/arschles/gcsup/Godeps/_workspace/src/google.golang.org/cloud/bigquery"
+	"golang.org/x/net/context"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/cloud/bigquery"
 )
 
 var (

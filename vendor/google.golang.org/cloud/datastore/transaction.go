@@ -18,9 +18,11 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/arschles/gcsup/Godeps/_workspace/src/github.com/golang/protobuf/proto"
-	"github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/net/context"
-	pb "github.com/arschles/gcsup/Godeps/_workspace/src/google.golang.org/cloud/internal/datastore"
+	"github.com/golang/protobuf/proto"
+	"golang.org/x/net/context"
+
+	pb "google.golang.org/cloud/internal/datastore"
+	"google.golang.org/cloud/internal/transport"
 )
 
 // ErrConcurrentTransaction is returned when a transaction is rolled back due
@@ -60,26 +62,67 @@ var (
 // A Transaction must be committed or rolled back exactly once.
 type Transaction struct {
 	id       []byte
+	client   *Client
 	ctx      context.Context
 	mutation *pb.Mutation  // The mutations to apply.
 	pending  []*PendingKey // Incomplete keys pending transaction completion.
 }
 
 // NewTransaction starts a new transaction.
-func NewTransaction(ctx context.Context, opts ...TransactionOption) (*Transaction, error) {
+func (c *Client) NewTransaction(ctx context.Context, opts ...TransactionOption) (*Transaction, error) {
 	req, resp := &pb.BeginTransactionRequest{}, &pb.BeginTransactionResponse{}
 	for _, o := range opts {
 		o.apply(req)
 	}
-	if err := call(ctx, "beginTransaction", req, resp); err != nil {
+	if err := c.call(ctx, "beginTransaction", req, resp); err != nil {
 		return nil, err
 	}
 
 	return &Transaction{
 		id:       resp.Transaction,
 		ctx:      ctx,
+		client:   c,
 		mutation: &pb.Mutation{},
 	}, nil
+}
+
+// RunInTransaction runs f in a transaction. f is invoked with a Transaction
+// that f should use for all the transaction's datastore operations.
+//
+// f must not call Commit or Rollback on the provided Transaction.
+//
+// If f returns nil, RunInTransaction commits the transaction,
+// returning the Commit and a nil error if it succeeds. If the commit fails due
+// to a conflicting transaction, RunInTransaction retries f with a new
+// Transaction. It gives up and returns ErrConcurrentTransaction after three
+// failed attempts.
+//
+// If f returns non-nil, then the transaction will be rolled back and
+// RunInTransaction will return the same error. The function f is not retried.
+//
+// Note that when f returns, the transaction is not committed. Calling code
+// must not assume that any of f's changes have been committed until
+// RunInTransaction returns nil.
+//
+// Since f may be called multiple times, f should usually be idempotent.
+// Note that Transaction.Get is not idempotent when unmarshaling slice fields.
+func (c *Client) RunInTransaction(ctx context.Context, f func(tx *Transaction) error, opts ...TransactionOption) (*Commit, error) {
+	// TODO(djd): Allow configuring of attempts.
+	const attempts = 3
+	for n := 0; n < attempts; n++ {
+		tx, err := c.NewTransaction(ctx, opts...)
+		if err != nil {
+			return nil, err
+		}
+		if err := f(tx); err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+		if cmt, err := tx.Commit(); err != ErrConcurrentTransaction {
+			return cmt, err
+		}
+	}
+	return nil, ErrConcurrentTransaction
 }
 
 // Commit applies the enqueued operations atomically.
@@ -94,8 +137,8 @@ func (t *Transaction) Commit() (*Commit, error) {
 	}
 	t.id = nil
 	resp := &pb.CommitResponse{}
-	if err := call(t.ctx, "commit", req, resp); err != nil {
-		if e, ok := err.(*errHTTP); ok && e.StatusCode == http.StatusConflict {
+	if err := t.client.call(t.ctx, "commit", req, resp); err != nil {
+		if e, ok := err.(*transport.ErrHTTP); ok && e.StatusCode == http.StatusConflict {
 			// TODO(jbd): Make sure that we explicitly handle the case where response
 			// has an HTTP 409 and the error message indicates that it's an concurrent
 			// transaction error.
@@ -124,7 +167,7 @@ func (t *Transaction) Rollback() error {
 	}
 	id := t.id
 	t.id = nil
-	return call(t.ctx, "rollback", &pb.RollbackRequest{Transaction: id}, &pb.RollbackResponse{})
+	return t.client.call(t.ctx, "rollback", &pb.RollbackRequest{Transaction: id}, &pb.RollbackResponse{})
 }
 
 // Get is the transaction-specific version of the package function Get.
@@ -133,7 +176,7 @@ func (t *Transaction) Rollback() error {
 // level, another transaction cannot concurrently modify the data that is read
 // or modified by this transaction.
 func (t *Transaction) Get(key *Key, dst interface{}) error {
-	err := get(t.ctx, []*Key{key}, []interface{}{dst}, &pb.ReadOptions{Transaction: t.id})
+	err := t.client.get(t.ctx, []*Key{key}, []interface{}{dst}, &pb.ReadOptions{Transaction: t.id})
 	if me, ok := err.(MultiError); ok {
 		return me[0]
 	}
@@ -145,7 +188,7 @@ func (t *Transaction) GetMulti(keys []*Key, dst interface{}) error {
 	if t.id == nil {
 		return errExpiredTransaction
 	}
-	return get(t.ctx, keys, dst, &pb.ReadOptions{Transaction: t.id})
+	return t.client.get(t.ctx, keys, dst, &pb.ReadOptions{Transaction: t.id})
 }
 
 // Put is the transaction-specific version of the package function Put.
@@ -179,7 +222,7 @@ func (t *Transaction) PutMulti(keys []*Key, src interface{}) ([]*PendingKey, err
 
 	// Prepare the returned handles, pre-populating where possible.
 	ret := make([]*PendingKey, len(keys))
-	for _, key := range keys {
+	for i, key := range keys {
 		h := &PendingKey{}
 		if key.Incomplete() {
 			// This key will be in the final commit result.
@@ -187,8 +230,10 @@ func (t *Transaction) PutMulti(keys []*Key, src interface{}) ([]*PendingKey, err
 		} else {
 			h.key = key
 		}
-		ret = append(ret, h)
+
+		ret[i] = h
 	}
+
 	return ret, nil
 }
 

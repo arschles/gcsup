@@ -17,13 +17,14 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/net/context"
-	"github.com/arschles/gcsup/Godeps/_workspace/src/google.golang.org/cloud/bigtable" // User-provided constants.
+	"golang.org/x/net/context"
 	"google.golang.org/appengine"
 	aelog "google.golang.org/appengine/log"
 	"google.golang.org/appengine/user"
+	"google.golang.org/cloud/bigtable"
 )
 
+// User-provided constants.
 const (
 	project = "PROJECT_ID"
 	zone    = "CLUSTER_ZONE"

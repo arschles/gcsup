@@ -86,10 +86,10 @@ To increment an encoded value in one cell,
 	r, err := tbl.ApplyReadModifyWrite(ctx, "com.google.cloud", rmw)
 	...
 */
-package bigtable
+package bigtable // import "google.golang.org/cloud/bigtable"
 
 // Scope constants for authentication credentials.
-// These should be used when using credential creation functions such as credentials.NewServiceAccountFromFile.
+// These should be used when using credential creation functions such as oauth.NewServiceAccountFromFile.
 const (
 	// Scope is the OAuth scope for Cloud Bigtable data operations.
 	Scope = "https://www.googleapis.com/auth/bigtable.data"
@@ -102,3 +102,7 @@ const (
 	// ClusterAdminScope is the OAuth scope for Cloud Bigtable cluster admin operations.
 	ClusterAdminScope = "https://www.googleapis.com/auth/bigtable.admin.cluster"
 )
+
+// clientUserAgent identifies the version of this package.
+// It should be bumped upon significant changes only.
+const clientUserAgent = "cbt-go/20150727"

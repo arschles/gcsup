@@ -14,7 +14,7 @@
 
 package bigquery
 
-import "github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/net/context"
+import "golang.org/x/net/context"
 
 // Dataset is a reference to a BigQuery dataset.
 type Dataset struct {

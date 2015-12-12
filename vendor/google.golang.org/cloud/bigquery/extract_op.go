@@ -17,7 +17,7 @@ package bigquery
 import (
 	"fmt"
 
-	"github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/net/context"
+	"golang.org/x/net/context"
 	bq "google.golang.org/api/bigquery/v2"
 )
 

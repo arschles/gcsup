@@ -18,7 +18,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/net/context"
+	"golang.org/x/net/context"
+
 	bq "google.golang.org/api/bigquery/v2"
 )
 
@@ -75,13 +76,12 @@ func TestQuery(t *testing.T) {
 		},
 		{
 			dst: &Table{
-				ProjectID:         "project-id",
-				DatasetID:         "dataset-id",
-				TableID:           "table-id",
-				CreateDisposition: "CREATE_NEVER",
-				WriteDisposition:  "WRITE_TRUNCATE",
+				ProjectID: "project-id",
+				DatasetID: "dataset-id",
+				TableID:   "table-id",
 			},
-			src: defaultQuery,
+			src:     defaultQuery,
+			options: []Option{CreateNever, WriteTruncate},
 			want: func() *bq.Job {
 				j := defaultQueryJob()
 				j.Configuration.Query.WriteDisposition = "WRITE_TRUNCATE"

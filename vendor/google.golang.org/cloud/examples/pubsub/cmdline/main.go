@@ -27,12 +27,13 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/net/context"
-	"github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/oauth2"
-	"github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/oauth2/google"
-	"github.com/arschles/gcsup/Godeps/_workspace/src/google.golang.org/cloud"
-	"github.com/arschles/gcsup/Godeps/_workspace/src/google.golang.org/cloud/compute/metadata"
-	"github.com/arschles/gcsup/Godeps/_workspace/src/google.golang.org/cloud/pubsub"
+	"golang.org/x/net/context"
+
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/cloud"
+	"google.golang.org/cloud/compute/metadata"
+	"google.golang.org/cloud/pubsub"
 )
 
 var (

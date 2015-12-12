@@ -22,7 +22,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/net/context"
+	"golang.org/x/net/context"
 )
 
 type contextKey struct{}

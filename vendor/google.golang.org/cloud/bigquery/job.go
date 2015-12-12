@@ -17,7 +17,7 @@ package bigquery
 import (
 	"errors"
 
-	"github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/net/context"
+	"golang.org/x/net/context"
 	bq "google.golang.org/api/bigquery/v2"
 )
 
@@ -112,13 +112,13 @@ func (j *Job) Status(ctx context.Context) (*JobStatus, error) {
 
 func (j *Job) implementsReadSource() {}
 
-func (j *Job) customizeReadQuery(conf *readQueryConf) error {
+func (j *Job) customizeReadQuery(cursor *readQueryConf) error {
 	// There are mulitple kinds of jobs, but only a query job is suitable for reading.
 	if !j.isQuery {
 		return errors.New("Cannot read from a non-query job")
 	}
 
-	conf.projectID = j.projectID
-	conf.jobID = j.jobID
+	cursor.projectID = j.projectID
+	cursor.jobID = j.jobID
 	return nil
 }

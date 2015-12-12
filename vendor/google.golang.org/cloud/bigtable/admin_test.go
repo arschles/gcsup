@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/net/context"
-	"github.com/arschles/gcsup/Godeps/_workspace/src/google.golang.org/cloud"
-	"github.com/arschles/gcsup/Godeps/_workspace/src/google.golang.org/cloud/bigtable/bttest"
-	"github.com/arschles/gcsup/Godeps/_workspace/src/google.golang.org/grpc"
+	"golang.org/x/net/context"
+	"google.golang.org/cloud"
+	"google.golang.org/cloud/bigtable/bttest"
+	"google.golang.org/grpc"
 )
 
 func TestAdminIntegration(t *testing.T) {
@@ -22,7 +22,7 @@ func TestAdminIntegration(t *testing.T) {
 
 	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
 
-	conn, err := grpc.Dial(srv.Addr)
+	conn, err := grpc.Dial(srv.Addr, grpc.WithInsecure())
 	if err != nil {
 		t.Fatalf("grpc.Dial: %v", err)
 	}

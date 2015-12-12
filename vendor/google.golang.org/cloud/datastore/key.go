@@ -22,9 +22,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/arschles/gcsup/Godeps/_workspace/src/github.com/golang/protobuf/proto"
-	"github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/net/context"
-	pb "github.com/arschles/gcsup/Godeps/_workspace/src/google.golang.org/cloud/internal/datastore"
+	"github.com/golang/protobuf/proto"
+	"golang.org/x/net/context"
+	pb "google.golang.org/cloud/internal/datastore"
 )
 
 // Key represents the datastore key for a stored entity, and is immutable.
@@ -247,7 +247,7 @@ func NewIncompleteKey(ctx context.Context, kind string, parent *Key) *Key {
 
 // NewKey creates a new key.
 // kind cannot be empty.
-// Either one or both of stringID and intID must be zero. If both are zero,
+// Either one or both of name and id must be zero. If both are zero,
 // the key returned is incomplete.
 // parent must either be a complete key or nil.
 func NewKey(ctx context.Context, kind, name string, id int64, parent *Key) *Key {
@@ -262,14 +262,14 @@ func NewKey(ctx context.Context, kind, name string, id int64, parent *Key) *Key 
 
 // AllocateIDs accepts a slice of incomplete keys and returns a
 // slice of complete keys that are guaranteed to be valid in the datastore
-func AllocateIDs(ctx context.Context, keys []*Key) ([]*Key, error) {
+func (c *Client) AllocateIDs(ctx context.Context, keys []*Key) ([]*Key, error) {
 	if keys == nil {
 		return nil, nil
 	}
 
 	req := &pb.AllocateIdsRequest{Key: multiKeyToProto(keys)}
 	res := &pb.AllocateIdsResponse{}
-	if err := call(ctx, "allocateIds", req, res); err != nil {
+	if err := c.call(ctx, "allocateIds", req, res); err != nil {
 		return nil, err
 	}
 

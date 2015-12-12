@@ -23,9 +23,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/net/context"
-	"github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/oauth2/google"
-	"github.com/arschles/gcsup/Godeps/_workspace/src/google.golang.org/cloud/bigquery"
+	"golang.org/x/net/context"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/cloud/bigquery"
 )
 
 var (
@@ -63,10 +63,9 @@ func main() {
 	}
 
 	table := &bigquery.Table{
-		ProjectID:        *project,
-		DatasetID:        *dataset,
-		TableID:          *table,
-		WriteDisposition: bigquery.WriteTruncate,
+		ProjectID: *project,
+		DatasetID: *dataset,
+		TableID:   *table,
 	}
 
 	gcs := client.NewGCSReference(fmt.Sprintf("gs://%s/%s", *bucket, *object))
@@ -76,7 +75,8 @@ func main() {
 	job, err := client.Copy(
 		context.Background(), table, gcs,
 		bigquery.MaxBadRecords(1),
-		bigquery.AllowQuotedNewlines())
+		bigquery.AllowQuotedNewlines(),
+		bigquery.WriteTruncate)
 
 	if err != nil {
 		log.Fatalf("Loading data: %v", err)

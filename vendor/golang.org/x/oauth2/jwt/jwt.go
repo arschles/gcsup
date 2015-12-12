@@ -1,4 +1,4 @@
-// Copyright 2014 The oauth2 Authors. All rights reserved.
+// Copyright 2014 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -18,10 +18,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/net/context"
-	"github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/oauth2"
-	"github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/oauth2/internal"
-	"github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/oauth2/jws"
+	"golang.org/x/net/context"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/internal"
+	"golang.org/x/oauth2/jws"
 )
 
 var (
@@ -54,6 +54,9 @@ type Config struct {
 
 	// TokenURL is the endpoint required to complete the 2-legged JWT flow.
 	TokenURL string
+
+	// Expires optionally specifies how long the token is valid for.
+	Expires time.Duration
 }
 
 // TokenSource returns a JWT TokenSource using the configuration
@@ -94,6 +97,9 @@ func (js jwtSource) Token() (*oauth2.Token, error) {
 		// prn is the old name of sub. Keep setting it
 		// to be compatible with legacy OAuth 2.0 providers.
 		claimSet.Prn = subject
+	}
+	if t := js.conf.Expires; t > 0 {
+		claimSet.Exp = time.Now().Add(t).Unix()
 	}
 	payload, err := jws.Encode(defaultHeader, claimSet, pk)
 	if err != nil {

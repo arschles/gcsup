@@ -1,12 +1,12 @@
-// Copyright 2015 The oauth2 Authors. All rights reserved.
+// Copyright 2015 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
 // Package linkedin provides constants for using OAuth2 to access LinkedIn.
-package linkedin
+package linkedin // import "golang.org/x/oauth2/linkedin"
 
 import (
-	"github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/oauth2"
+	"golang.org/x/oauth2"
 )
 
 // Endpoint is LinkedIn's OAuth 2.0 endpoint.

@@ -18,7 +18,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/net/context"
+	"golang.org/x/net/context"
 	bq "google.golang.org/api/bigquery/v2"
 )
 
@@ -67,11 +67,9 @@ func TestCopy(t *testing.T) {
 		},
 		{
 			dst: &Table{
-				ProjectID:         "d-project-id",
-				DatasetID:         "d-dataset-id",
-				TableID:           "d-table-id",
-				CreateDisposition: "CREATE_NEVER",
-				WriteDisposition:  "WRITE_TRUNCATE",
+				ProjectID: "d-project-id",
+				DatasetID: "d-dataset-id",
+				TableID:   "d-table-id",
 			},
 			src: Tables{
 				{
@@ -80,6 +78,7 @@ func TestCopy(t *testing.T) {
 					TableID:   "s-table-id",
 				},
 			},
+			options: []Option{CreateNever, WriteTruncate},
 			want: func() *bq.Job {
 				j := defaultCopyJob()
 				j.Configuration.Copy.CreateDisposition = "CREATE_NEVER"

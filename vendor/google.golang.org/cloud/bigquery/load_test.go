@@ -18,7 +18,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/net/context"
+	"golang.org/x/net/context"
+
 	bq "google.golang.org/api/bigquery/v2"
 )
 
@@ -96,13 +97,12 @@ func TestLoad(t *testing.T) {
 		},
 		{
 			dst: &Table{
-				ProjectID:         "project-id",
-				DatasetID:         "dataset-id",
-				TableID:           "table-id",
-				CreateDisposition: "CREATE_NEVER",
-				WriteDisposition:  "WRITE_TRUNCATE",
+				ProjectID: "project-id",
+				DatasetID: "dataset-id",
+				TableID:   "table-id",
 			},
-			src: defaultGCS,
+			options: []Option{CreateNever, WriteTruncate},
+			src:     defaultGCS,
 			want: func() *bq.Job {
 				j := defaultLoadJob()
 				j.Configuration.Load.CreateDisposition = "CREATE_NEVER"
@@ -118,7 +118,7 @@ func TestLoad(t *testing.T) {
 			},
 			src: defaultGCS,
 			options: []Option{
-				DestinationSchema(&Schema{
+				DestinationSchema(Schema{
 					stringFieldSchema(),
 					nestedFieldSchema(),
 				}),

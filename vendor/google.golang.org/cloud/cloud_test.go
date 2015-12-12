@@ -18,7 +18,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/arschles/gcsup/Godeps/_workspace/src/google.golang.org/cloud/internal"
+	"google.golang.org/cloud/internal"
 )
 
 func TestClientTransportMutate(t *testing.T) {

@@ -14,7 +14,7 @@
 
 package bigquery
 
-import "github.com/arschles/gcsup/Godeps/_workspace/src/golang.org/x/net/context"
+import "golang.org/x/net/context"
 
 // RecordsPerRequest returns a ReadOption that sets the number of records to fetch per request when streaming data from BigQuery.
 func RecordsPerRequest(n int64) ReadOption { return recordsPerRequest(n) }
@@ -35,20 +35,23 @@ func (opt startIndex) customizeRead(conf *pagingConf) {
 	conf.startIndex = uint64(opt)
 }
 
+func (conf *readTableConf) fetch(ctx context.Context, c *Client, token string) (*readDataResult, error) {
+	return c.service.readTabledata(ctx, conf, token)
+}
+
 func (c *Client) readTable(t *Table, options []ReadOption) (*Iterator, error) {
-	conf := &readTabledataConf{}
+	conf := &readTableConf{}
 	t.customizeReadSrc(conf)
 
 	for _, o := range options {
 		o.customizeRead(&conf.paging)
 	}
 
-	pageFetcher := func(ctx context.Context, token string) (*readDataResult, error) {
-		conf.paging.pageToken = token
-		return c.service.readTabledata(ctx, conf)
-	}
+	return newIterator(c, conf), nil
+}
 
-	return &Iterator{pf: pageFetcher}, nil
+func (conf *readQueryConf) fetch(ctx context.Context, c *Client, token string) (*readDataResult, error) {
+	return c.service.readQuery(ctx, conf, token)
 }
 
 func (c *Client) readQueryResults(job *Job, options []ReadOption) (*Iterator, error) {
@@ -61,10 +64,5 @@ func (c *Client) readQueryResults(job *Job, options []ReadOption) (*Iterator, er
 		o.customizeRead(&conf.paging)
 	}
 
-	pageFetcher := func(ctx context.Context, token string) (*readDataResult, error) {
-		conf.paging.pageToken = token
-		return c.service.readQuery(ctx, conf)
-	}
-
-	return &Iterator{pf: pageFetcher}, nil
+	return newIterator(c, conf), nil
 }
