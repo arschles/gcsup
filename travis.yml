@@ -9,12 +9,12 @@ sudo: required
 services:
   - docker
 install:
-  - docker run --rm -v $PWD:/pwd -w /pwd quay.io/deis/go-dev:0.2.0 glide up
+  - make bootstrap
 script:
-  - docker run --rm -v $PWD:/pwd -w /pwd quay.io/deis/go-dev:0.2.0 go test $(glide nv)
-  - docker run --rm -v $PWD:/pwd -w /pwd quay.io/deis/go-dev:0.2.0 go build -o gcsup
+  - make test
+  - make build
 deploy:
   provider: script
   script: ./docker-deploy.sh
   on:
-    branch: master
+    all_branches: true
