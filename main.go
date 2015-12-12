@@ -16,6 +16,7 @@ import (
 	"google.golang.org/cloud/storage"
 )
 
+// Config is the envconfig compatible struct to store config values that are input to gcsup
 type Config struct {
 	JWTFileLocation string `required:"true" envconfig:"jwt_file_location"`
 	ProjectName     string `required:"true" envconfig:"project_name"`
@@ -23,16 +24,19 @@ type Config struct {
 	LocalFolder     string `required:"true" envconfig:"local_folder"`
 }
 
+// FilePath represents a file to upload to GCS
 type FilePath struct {
 	RootDir      string
 	RelativePath string
 	Name         string
 }
 
+// AbsolutePath returns the absolute path to fp on disk
 func (fp FilePath) AbsolutePath() string {
 	return fmt.Sprintf("%s/%s", fp.RootDir, fp.RelativePath)
 }
 
+// String is an alias to AbsolutePath
 func (fp FilePath) String() string {
 	return fp.AbsolutePath()
 }
