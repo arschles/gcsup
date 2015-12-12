@@ -1,0 +1,17 @@
+language: generic
+cache:
+  directories:
+    - vendor
+sudo: required
+services:
+  - docker
+install:
+  - make bootstrap
+script:
+  - make test
+  - make build
+deploy:
+  provider: script
+  script: ./docker-deploy.sh
+  on:
+    all_branches: true
