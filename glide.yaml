@@ -1,17 +1,32 @@
 package: main
-
 import:
+  - package: github.com/golang/protobuf
+    version: ab974be44dc3b7b8a1fb306fb32fe9b9f3864b3d
+    subpackages:
+      - /proto
+  - package: google.golang.org/api
+    subpackages:
+      - /googleapi
+  - package: google.golang.org/grpc
+    version: 91c8b79535eb6045d70ec671d302213f88a3ab95
+    subpackages:
+      - /credentials/oauth
+  - package: github.com/bradfitz/http2
+    version: f8202bc903bda493ebba4aa54922d78430c2c42f
+    subpackages:
+      - /hpack
   - package: github.com/kelseyhightower/envconfig
     version: 12c18e8343f6eb5fc3a9d5c8dc353e42e6bb40b9
-  - package: golang.org/x/net/context
+  - package: golang.org/x/net
     version: d9558e5c97f85372afee28cf2b6059d7d3818919
+    subpackages:
+      - /context
+      - /context/ctxhttp
   - package: golang.org/x/oauth2
+    version: 8914e5017ca260f2a3a1575b1e6868874050d95e
     subpackages:
       - /google
-    version: 8914e5017ca260f2a3a1575b1e6868874050d95e
   - package: google.golang.org/cloud
     version: 87a8821aafd434304c9fea89a9484c2fdd7aea15
-  - package: google.golang.org/cloud/storage
-    version: 87a8821aafd434304c9fea89a9484c2fdd7aea15
-  - package: google.golang.org/grpc/credentials/oauth
-    version: 91c8b79535eb6045d70ec671d302213f88a3ab95
+    subpackages:
+      - /storage
