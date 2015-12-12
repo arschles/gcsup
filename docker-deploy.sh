@@ -14,8 +14,5 @@ elif  [[ $TRAVIS_BRANCH != "master" ]]; then
   VER="branch-$TRAVIS_BRANCH"
 fi
 
-export IMAGE_PREFIX=deisci VERSION=$VER
-
 docker login -e="$QUAY_EMAIL" -u="$QUAY_USERNAME" -p="$QUAY_PASSWORD" quay.io
-docker build -t quay.io/arschles/gcsup .
-docker push quay.io/arschles/gcsup
+IMAGE_NAME=quay.io/arschles/gcsup:$VERSION make docker-build docker-push
