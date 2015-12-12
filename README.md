@@ -1,7 +1,9 @@
 # gcsup
 
 [![Build Status](https://travis-ci.org/arschles/gcsup?branch=master)](https://travis-ci.org/arschles/gcsup)
+
 [![Docker Repository on Quay](https://quay.io/repository/arschles/gcsup/status "Docker Repository on Quay")](https://quay.io/repository/arschles/gcsup)
+
 [![Go Report Card](http://goreportcard.com/badge/arschles/gcsup)](http://goreportcard.com/report/arschles/gcsup)
 
 
