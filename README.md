@@ -1,6 +1,9 @@
 # gcsup
 
-[![Circle CI](https://circleci.com/gh/arschles/gcsup/tree/master.svg?style=svg)](https://circleci.com/gh/arschles/gcsup/tree/master)
+[![Build Status](https://travis-ci.org/arschles/gcsup?branch=master)](https://travis-ci.org/arschles/gcsup)
+[![Docker Repository on Quay](https://quay.io/repository/arschles/gcsup/status "Docker Repository on Quay")](https://quay.io/repository/arschles/gcsup)
+[![Go Report Card](http://goreportcard.com/badge/arschles/gcsup)](http://goreportcard.com/report/arschles/gcsup)
+
 
 A utility for uploading folders to Google Cloud Storage. Run it simply with `./gcsup` and configure it with the following environment variables:
 
