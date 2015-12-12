@@ -1,4 +1,4 @@
-package: main
+# package: main
 import:
   - package: github.com/golang/protobuf
     version: ab974be44dc3b7b8a1fb306fb32fe9b9f3864b3d
