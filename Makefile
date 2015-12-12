@@ -8,6 +8,9 @@ DEV_ENV_CMD := ${DEV_ENV_PREFIX} ${DEV_ENV_IMAGE}
 
 IMAGE_NAME := quay.io/arschles/gcsup:latest
 
+bootstrap:
+	${DEV_ENV_CMD} glide up
+
 build:
 	${DEV_ENV_PREFIX} go build -o gcsup
 
