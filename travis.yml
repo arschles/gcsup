@@ -15,6 +15,6 @@ script:
   - docker run --rm -v $PWD:/pwd -w /pwd quay.io/deis/go-dev:0.2.0 go build -o gcsup
 deploy:
   provider: script
-  script: _scripts/deploy.sh
+  script: ./docker-deploy.sh
   on:
     branch: master
