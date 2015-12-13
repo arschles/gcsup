@@ -15,6 +15,6 @@ elif  [[ "$TRAVIS_BRANCH" != "master" ]]; then
 fi
 
 docker login -e="$QUAY_EMAIL" -u="$QUAY_USERNAME" -p="$QUAY_PASSWORD" quay.io
-export IMAGE_NAME="quay.io/arschles/gcsup:$VERSION"
+export IMAGE_NAME="quay.io/arschles/gcsup:$VER"
 echo "building and pushing $IMAGE_NAME"
 make build docker-build docker-push
