@@ -17,4 +17,4 @@ fi
 docker login -e="$QUAY_EMAIL" -u="$QUAY_USERNAME" -p="$QUAY_PASSWORD" quay.io
 export IMAGE_NAME="quay.io/arschles/gcsup:$VERSION"
 echo "building and pushing $IMAGE_NAME"
-make docker-build docker-push
+make build docker-build docker-push
