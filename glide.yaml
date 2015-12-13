@@ -2,8 +2,8 @@ package: main
 import:
   - package: github.com/golang/protobuf
     version: ab974be44dc3b7b8a1fb306fb32fe9b9f3864b3d
-  - package: google.golang.org/api
-    version: 91c8b79535eb6045d70ec671d302213f88a3ab95
+  - package: google.golang.org/api/googleapi
+    version: d56f328dc27a4097cd0fc535e7c77807f48a2e84
   - package: google.golang.org/grpc
     version: 91c8b79535eb6045d70ec671d302213f88a3ab95
     subpackages:
@@ -16,8 +16,8 @@ import:
     version: f8202bc903bda493ebba4aa54922d78430c2c42f
     subpackages:
       - /hpack
-  - package: google.golang.org/api/googleapi
-    version: d56f328dc27a4097cd0fc535e7c77807f48a2e84
+  # - package: google.golang.org/api/googleapi
+  #   version: d56f328dc27a4097cd0fc535e7c77807f48a2e84
   - package: github.com/kelseyhightower/envconfig
     version: 12c18e8343f6eb5fc3a9d5c8dc353e42e6bb40b9
   - package: golang.org/x/net
