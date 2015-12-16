@@ -1,17 +1,14 @@
 hash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-updated: 2015-12-16T04:27:28.929189841Z
+updated: 2015-12-16T04:55:08.433390165Z
 imports:
 - name: github.com/golang/glog
   version: fca8c8854093a154ff1eb580aae10276ad6b1b5f
-  repo: https://github.com/golang/glog
 - name: github.com/golang/protobuf
   version: 68415e7123da32b07eab49c96d2c4d6158360e9b
-  repo: https://github.com/golang/protobuf
 - name: github.com/kelseyhightower/envconfig
   version: 12c18e8343f6eb5fc3a9d5c8dc353e42e6bb40b9
 - name: golang.org/x/crypto
   version: f18420efc3b4f8e9f3d51f6bd2476e92c46260e9
-  repo: https://golang.org/x/crypto
 - name: golang.org/x/net
   version: 548f7bf20c8aae87fecd9aa09cc89065451e6271
   subpackages:
@@ -22,18 +19,14 @@ imports:
   - google
 - name: golang.org/x/text
   version: 92ca7bbb695e2e9675f1d731fa85760f95d2c0df
-  repo: https://golang.org/x/text
 - name: google.golang.org/api
   version: fb9a762b1ba5eb828d4c3ea6b53755f290ca27ad
-  repo: https://google.golang.org/api
 - name: google.golang.org/appengine
   version: ea2803184885858bb094b58ddeac06b3675b9994
-  repo: https://google.golang.org/appengine
 - name: google.golang.org/cloud
   version: ba8512ba2fa64d5a130fc8cd9a0d4e641e92e734
   subpackages:
   - storage
 - name: google.golang.org/grpc
   version: a22b6611561e9f0a3e0919690dd2caf48f14c517
-  repo: https://google.golang.org/grpc
 devImports: []

@@ -29,6 +29,7 @@ type Config struct {
 // FilePath represents a file to upload to GCS
 type FilePath struct {
 	RelativePath string
+	AbsolutePath string
 	Name         string
 }
 
@@ -67,7 +68,7 @@ func main() {
 			return nil
 		}
 		relPath := strings.TrimPrefix(path, conf.LocalFolder+"/")
-		files = append(files, FilePath{RelativePath: relPath, Name: fInfo.Name()})
+		files = append(files, FilePath{AbsolutePath: path, RelativePath: relPath, Name: fInfo.Name()})
 		return nil
 	}); err != nil {
 		fmt.Printf("error gathering all files [%s]", err)
@@ -75,7 +76,7 @@ func main() {
 	}
 	var wg sync.WaitGroup
 	for _, file := range files {
-		from := file.RelativePath
+		from := file.AbsolutePath
 		to := strings.TrimPrefix(file.RelativePath, conf.LocalFolder)
 		fmt.Printf("uploading %s to %s\n", from, to)
 		wg.Add(1)
