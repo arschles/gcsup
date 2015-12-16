@@ -9,8 +9,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/kelseyhightower/envconfig"
 	"golang.org/x/net/context"
+
+	"github.com/kelseyhightower/envconfig"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/cloud"
@@ -53,6 +54,13 @@ func main() {
 	fmt.Printf("Uploading %s to gcs://%s/%s\n", conf.LocalFolder, conf.ProjectName, conf.BucketName)
 
 	ctx := cloud.NewContext(conf.ProjectName, jwtConf.Client(oauth2.NoContext))
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		fmt.Printf("error creating GCS client [%s]\n", err)
+		os.Exit(1)
+	}
+	bucket := client.Bucket(conf.BucketName)
+
 	var files []FilePath
 	if err := filepath.Walk(conf.LocalFolder, func(path string, fInfo os.FileInfo, err error) error {
 		if fInfo.IsDir() {
@@ -71,39 +79,46 @@ func main() {
 		to := strings.TrimPrefix(file.RelativePath, conf.LocalFolder)
 		fmt.Printf("uploading %s to %s\n", from, to)
 		wg.Add(1)
-		go func(ctx context.Context, conf Config, from, to string) {
+		go func(ctx context.Context, bucket *storage.BucketHandle, conf Config, from, to string) {
 			defer wg.Done()
-			if err := upload(ctx, conf, from, to); err != nil {
+			if err := upload(ctx, client.Bucket(conf.BucketName), conf, from, to); err != nil {
 				fmt.Printf("ERROR uploading %s to %s (%s)\n", from, to, err)
 			}
-		}(ctx, conf, from, to)
+		}(ctx, bucket, conf, from, to)
 	}
 	fmt.Println("waiting for all uploads to finish...")
 	wg.Wait()
 	fmt.Println("done")
 }
 
-func upload(ctx context.Context, conf Config, from, to string) error {
-	w := storage.NewWriter(ctx, conf.BucketName, to)
-
-	defer func() {
-		if err := w.Close(); err != nil {
-			fmt.Printf("ERROR closing writer for upload %s => %s (%s)\n", from, to, err)
-		}
-	}()
-
-	w.ACL = []storage.ACLRule{
-		storage.ACLRule{Entity: storage.AllUsers, Role: storage.RoleReader},
-	}
-	extension := from[strings.LastIndex(from, "."):]
-	w.ContentType = mime.TypeByExtension(extension)
+func upload(ctx context.Context, bucket *storage.BucketHandle, conf Config, from, to string) error {
 
 	fileBytes, err := ioutil.ReadFile(from)
 	if err != nil {
 		return err
 	}
+
+	obj := bucket.Object(to)
+	w := obj.NewWriter(ctx)
 	if _, err := w.Write(fileBytes); err != nil {
 		return err
 	}
+	if err := w.Close(); err != nil {
+		fmt.Printf("ERROR closing writer for upload %s => %s (%s)\n", from, to, err)
+		return err
+	}
+
+	extension := from[strings.LastIndex(from, "."):]
+	attrs := storage.ObjectAttrs{
+		ACL: []storage.ACLRule{
+			storage.ACLRule{Entity: storage.AllUsers, Role: storage.RoleReader},
+		},
+		ContentType: mime.TypeByExtension(extension),
+	}
+
+	if _, err := obj.Update(ctx, attrs); err != nil {
+		return err
+	}
+
 	return nil
 }
