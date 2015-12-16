@@ -12,4 +12,16 @@ A utility for uploading folders to Google Cloud Storage. Run it simply with `./g
 - `GCSUP_BUCKET_NAME` - the name of the bucket inside the given project
 - `GCSUP_LOCAL_FOLDER` - the name of the local folder to upload
 
+# Running the Program
+
 When you run `./gcsup`, the folder at `GCSUP_LOCAL_FOLDER` will be entirely uploaded to the given bucket in the given project. The bucket will have the exact same hierarchy as the local folder, and MIME types for each file will be inferred by the Go standard library's [`TypeByExtension`](https://godoc.org/mime#TypeByExtension) function, which guesses based on each file's extension.
+
+# Running the Docker Image
+
+`gcsup` builds are automatically packages as the [quay.io/arschles/gcsup](https://quay.io/repository/arschles/gcsup) Docker image, which simply places a `gcsup` binary in `/bin`.
+
+Generate your site using the following command:
+
+```console
+docker run --rm -v $PWD:/pwd -w /pwd quay.io/arschles/gcsup:0.0.1 hugo -v
+```
