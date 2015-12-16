@@ -1,0 +1,41 @@
+hash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+updated: 2015-12-15T20:15:18.160710479-08:00
+imports:
+- name: github.com/bradfitz/http2
+  version: f8202bc903bda493ebba4aa54922d78430c2c42f
+  subpackages:
+  - /hpack
+- name: github.com/golang/glog
+  version: fca8c8854093a154ff1eb580aae10276ad6b1b5f
+- name: github.com/golang/protobuf
+  version: ab974be44dc3b7b8a1fb306fb32fe9b9f3864b3d
+- name: github.com/kelseyhightower/envconfig
+  version: 12c18e8343f6eb5fc3a9d5c8dc353e42e6bb40b9
+- name: golang.org/x/crypto
+  version: f18420efc3b4f8e9f3d51f6bd2476e92c46260e9
+- name: golang.org/x/net
+  version: d9558e5c97f85372afee28cf2b6059d7d3818919
+  subpackages:
+  - /context
+- name: golang.org/x/oauth2
+  version: 8914e5017ca260f2a3a1575b1e6868874050d95e
+  subpackages:
+  - /google
+- name: golang.org/x/text
+  version: 92ca7bbb695e2e9675f1d731fa85760f95d2c0df
+- name: google.golang.org/api
+  version: d56f328dc27a4097cd0fc535e7c77807f48a2e84
+  subpackages:
+  - googleapi
+- name: google.golang.org/appengine
+  version: ea2803184885858bb094b58ddeac06b3675b9994
+- name: google.golang.org/cloud
+  version: 87a8821aafd434304c9fea89a9484c2fdd7aea15
+  subpackages:
+  - /storage
+- name: google.golang.org/grpc
+  version: 91c8b79535eb6045d70ec671d302213f88a3ab95
+  subpackages:
+  - /credentials/oauth
+  - /credentials
+devImports: []
