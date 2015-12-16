@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/kelseyhightower/envconfig"
 	"golang.org/x/net/context"
@@ -26,19 +27,8 @@ type Config struct {
 
 // FilePath represents a file to upload to GCS
 type FilePath struct {
-	RootDir      string
 	RelativePath string
 	Name         string
-}
-
-// AbsolutePath returns the absolute path to fp on disk
-func (fp FilePath) AbsolutePath() string {
-	return fmt.Sprintf("%s/%s", fp.RootDir, fp.RelativePath)
-}
-
-// String is an alias to AbsolutePath
-func (fp FilePath) String() string {
-	return fp.AbsolutePath()
 }
 
 func main() {
@@ -60,6 +50,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	fmt.Printf("Uploading %s to gcs://%s/%s\n", conf.LocalFolder, conf.ProjectName, conf.BucketName)
+
 	ctx := cloud.NewContext(conf.ProjectName, jwtConf.Client(oauth2.NoContext))
 	var files []FilePath
 	if err := filepath.Walk(conf.LocalFolder, func(path string, fInfo os.FileInfo, err error) error {
@@ -67,21 +59,31 @@ func main() {
 			return nil
 		}
 		relPath := strings.TrimPrefix(path, conf.LocalFolder+"/")
-		files = append(files, FilePath{RootDir: conf.LocalFolder, RelativePath: relPath, Name: fInfo.Name()})
+		files = append(files, FilePath{RelativePath: relPath, Name: fInfo.Name()})
 		return nil
 	}); err != nil {
 		fmt.Printf("error gathering all files [%s]", err)
 		os.Exit(1)
 	}
+	var wg sync.WaitGroup
 	for _, file := range files {
-		from := file.AbsolutePath()
-		to := file.RelativePath
+		from := file.RelativePath
+		to := strings.TrimPrefix(file.RelativePath, conf.LocalFolder)
 		fmt.Printf("uploading %s to %s\n", from, to)
-		upload(ctx, conf, from, to)
+		wg.Add(1)
+		go func(ctx context.Context, conf Config, from, to string) {
+			defer wg.Done()
+			if err := upload(ctx, conf, from, to); err != nil {
+				fmt.Printf("ERROR uploading %s to %s (%s)\n", from, to, err)
+			}
+		}(ctx, conf, from, to)
 	}
+	fmt.Println("waiting for all uploads to finish...")
+	wg.Wait()
+	fmt.Println("done")
 }
 
-func upload(ctx context.Context, conf Config, from string, to string) error {
+func upload(ctx context.Context, conf Config, from, to string) error {
 	w := storage.NewWriter(ctx, conf.BucketName, to)
 	defer w.Close()
 	w.ACL = []storage.ACLRule{
