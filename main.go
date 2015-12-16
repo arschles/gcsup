@@ -85,7 +85,13 @@ func main() {
 
 func upload(ctx context.Context, conf Config, from, to string) error {
 	w := storage.NewWriter(ctx, conf.BucketName, to)
-	defer w.Close()
+
+	defer func() {
+		if err := w.Close(); err != nil {
+			fmt.Printf("ERROR closing writer for upload %s => %s (%s)\n", from, to, err)
+		}
+	}()
+
 	w.ACL = []storage.ACLRule{
 		storage.ACLRule{Entity: storage.AllUsers, Role: storage.RoleReader},
 	}
