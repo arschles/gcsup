@@ -1,5 +1,5 @@
 hash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-updated: 2015-12-16T04:55:08.433390165Z
+updated: 2016-01-03T22:18:57.625545989Z
 imports:
 - name: github.com/golang/glog
   version: fca8c8854093a154ff1eb580aae10276ad6b1b5f
@@ -10,7 +10,7 @@ imports:
 - name: golang.org/x/crypto
   version: f18420efc3b4f8e9f3d51f6bd2476e92c46260e9
 - name: golang.org/x/net
-  version: 548f7bf20c8aae87fecd9aa09cc89065451e6271
+  version: 0cb26f788dd4625d1956c6fd97ffc4c90669d129
   subpackages:
   - context
 - name: golang.org/x/oauth2
@@ -18,15 +18,15 @@ imports:
   subpackages:
   - google
 - name: golang.org/x/text
-  version: 92ca7bbb695e2e9675f1d731fa85760f95d2c0df
+  version: cf4986612c83df6c55578ba198316d1684a9a287
 - name: google.golang.org/api
-  version: fb9a762b1ba5eb828d4c3ea6b53755f290ca27ad
+  version: dc6d2353af16e2a2b0ff6986af051d473a4ed468
 - name: google.golang.org/appengine
-  version: ea2803184885858bb094b58ddeac06b3675b9994
+  version: 58c0e2a2044a8d1abd8dd1d97939cd74497d0806
 - name: google.golang.org/cloud
-  version: ba8512ba2fa64d5a130fc8cd9a0d4e641e92e734
+  version: 6fdcab499d2c45e2939521c4047855f12a745a1d
   subpackages:
   - storage
 - name: google.golang.org/grpc
-  version: a22b6611561e9f0a3e0919690dd2caf48f14c517
+  version: 78905999da08d7f87d5dd11608fa79ff8700daa8
 devImports: []
