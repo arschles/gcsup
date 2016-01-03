@@ -112,7 +112,10 @@ func upload(ctx context.Context, bucket *storage.BucketHandle, conf Config, from
 	extension := from[strings.LastIndex(from, "."):]
 	attrs := storage.ObjectAttrs{
 		ACL: []storage.ACLRule{
-			storage.ACLRule{Entity: storage.AllUsers, Role: storage.RoleReader},
+			storage.ACLRule{
+				Entity: storage.AllUsers,
+				Role:   storage.RoleReader,
+			},
 		},
 		ContentType: mime.TypeByExtension(extension),
 	}
