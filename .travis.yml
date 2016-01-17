@@ -11,6 +11,6 @@ script:
   - make test
 deploy:
   provider: script
-  script: ./docker-deploy.sh
+  script: ./_scripts/deploy.sh
   on:
-    all_branches: true
+    branch: master
