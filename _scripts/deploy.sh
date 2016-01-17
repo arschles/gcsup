@@ -4,6 +4,4 @@
 #
 # This script was adapted from https://github.com/deis/builder
 
-cd "$(dirname "$0")" || exit 1
-
 make -C .. build docker-build docker-push
