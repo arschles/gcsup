@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"mime"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 
@@ -26,29 +25,22 @@ type Config struct {
 	LocalFolder     string `required:"true" envconfig:"local_folder"`
 }
 
-// FilePath represents a file to upload to GCS
-type FilePath struct {
-	RelativePath string
-	AbsolutePath string
-	Name         string
-}
-
 func main() {
 	var conf Config
 	if err := envconfig.Process("gcsup", &conf); err != nil {
-		fmt.Printf("config error [%s]", err)
+		fmt.Printf("Error with configuration [%s]", err)
 		os.Exit(1)
 	}
 
 	data, err := ioutil.ReadFile(conf.JWTFileLocation)
 	if err != nil {
-		fmt.Printf("error reading file [%s]\n", err)
+		fmt.Printf("Error reading file [%s]\n", err)
 		os.Exit(1)
 	}
 
 	jwtConf, err := google.JWTConfigFromJSON(data, storage.ScopeFullControl)
 	if err != nil {
-		fmt.Printf("error creating JWT config [%s]\n", err)
+		fmt.Printf("Error creating JWT config [%s]\n", err)
 		os.Exit(1)
 	}
 
@@ -57,39 +49,33 @@ func main() {
 	ctx := cloud.NewContext(conf.ProjectName, jwtConf.Client(oauth2.NoContext))
 	client, err := storage.NewClient(ctx)
 	if err != nil {
-		fmt.Printf("error creating GCS client [%s]\n", err)
+		fmt.Printf("Error creating GCS client [%s]\n", err)
 		os.Exit(1)
 	}
 	bucket := client.Bucket(conf.BucketName)
 
-	var files []FilePath
-	if err := filepath.Walk(conf.LocalFolder, func(path string, fInfo os.FileInfo, err error) error {
-		if fInfo.IsDir() {
-			return nil
-		}
-		relPath := strings.TrimPrefix(path, conf.LocalFolder+"/")
-		files = append(files, FilePath{AbsolutePath: path, RelativePath: relPath, Name: fInfo.Name()})
-		return nil
-	}); err != nil {
-		fmt.Printf("error gathering all files [%s]", err)
+	files, err := getAllFiles(conf.LocalFolder)
+	if err != nil {
+		fmt.Printf("Error gathering all files [%s]\n", err)
 		os.Exit(1)
 	}
+
 	var wg sync.WaitGroup
 	for _, file := range files {
 		from := file.AbsolutePath
 		to := strings.TrimPrefix(file.RelativePath, conf.LocalFolder)
-		fmt.Printf("uploading %s to %s\n", from, to)
+		fmt.Printf("Uploading %s to %s\n", from, to)
 		wg.Add(1)
 		go func(ctx context.Context, bucket *storage.BucketHandle, conf Config, from, to string) {
 			defer wg.Done()
 			if err := upload(ctx, client.Bucket(conf.BucketName), conf, from, to); err != nil {
-				fmt.Printf("ERROR uploading %s to %s (%s)\n", from, to, err)
+				fmt.Printf("Error uploading %s to %s (%s)\n", from, to, err)
 			}
 		}(ctx, bucket, conf, from, to)
 	}
-	fmt.Println("waiting for all uploads to finish...")
+	fmt.Println("Waiting for all uploads to finish...")
 	wg.Wait()
-	fmt.Println("done")
+	fmt.Println("Done")
 }
 
 func upload(ctx context.Context, bucket *storage.BucketHandle, conf Config, from, to string) error {
