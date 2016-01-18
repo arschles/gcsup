@@ -17,7 +17,7 @@ type FilePath struct {
 
 func getAllFiles(localRoot string) ([]FilePath, error) {
 	if _, err := os.Stat(localRoot); err != nil {
-		return err
+		return nil, err
 	}
 	var files []FilePath
 	err := filepath.Walk(localRoot, func(path string, fInfo os.FileInfo, err error) error {
