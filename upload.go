@@ -14,10 +14,11 @@ func upload(svc *storage.Service, conf Config, from, to string) error {
 	defer fd.Close()
 
 	objMeta := &storage.Object{
+		Name:            to,
 		ContentLanguage: "en",
 		ContentType:     getMimeType(from),
 	}
-	call := svc.Objects.Insert(conf.BucketName, objMeta).Name(to).Media(fd).PredefinedAcl("publicRead")
+	call := svc.Objects.Insert(conf.BucketName, objMeta).PredefinedAcl("publicRead").Media(fd)
 	if _, err := call.Do(); err != nil {
 		return err
 	}
