@@ -7,6 +7,6 @@ import:
 - package: golang.org/x/oauth2
   subpackages:
   - google
-- package: code.google.com/p/google-api-go-client
+- package: google.golang.org/api
   subpackages:
   - /storage/v1

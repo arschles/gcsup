@@ -6,9 +6,9 @@ import (
 	"strings"
 	"sync"
 
-	storage "code.google.com/p/google-api-go-client/storage/v1"
 	"github.com/kelseyhightower/envconfig"
 	"golang.org/x/net/context"
+	storage "google.golang.org/api/storage/v1"
 )
 
 // Config is the envconfig compatible struct to store config values that are input to gcsup

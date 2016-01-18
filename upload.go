@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	storage "code.google.com/p/google-api-go-client/storage/v1"
+	storage "google.golang.org/api/storage/v1"
 )
 
 func upload(svc *storage.Service, conf Config, from, to string) error {
@@ -17,7 +17,7 @@ func upload(svc *storage.Service, conf Config, from, to string) error {
 		ContentLanguage: "en",
 		ContentType:     getMimeType(from),
 	}
-	call := svc.Objects.Insert(conf.BucketName, objMeta).Media(fd).PredefinedAcl("publicRead")
+	call := svc.Objects.Insert(conf.BucketName, objMeta).Name(to).Media(fd).PredefinedAcl("publicRead")
 	if _, err := call.Do(); err != nil {
 		return err
 	}

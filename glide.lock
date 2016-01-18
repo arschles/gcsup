@@ -1,14 +1,10 @@
 hash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-updated: 2016-01-17T17:55:01.291176332-08:00
+updated: 2016-01-17T18:04:18.967836377-08:00
 imports:
+- name: code.google.com/p/goauth2
+  version: 222e66a2882e
 - name: code.google.com/p/google-api-go-client
   version: 6ddfebb10ece
-  subpackages:
-  - /storage/v1
-- name: github.com/golang/glog
-  version: fca8c8854093a154ff1eb580aae10276ad6b1b5f
-- name: github.com/golang/protobuf
-  version: 2402d76f3d41f928c7902a765dfc872356dd3aad
 - name: github.com/kelseyhightower/envconfig
   version: 12c18e8343f6eb5fc3a9d5c8dc353e42e6bb40b9
 - name: golang.org/x/net
@@ -21,10 +17,6 @@ imports:
   - google
 - name: google.golang.org/api
   version: b2be3c69519a81292faa7016d3c87f8b68c6f0d9
-- name: google.golang.org/appengine
-  version: 54bf9150c922186bfc45a00bf9dfcb91a5063275
-- name: google.golang.org/cloud
-  version: 6f469c6f5e20fde4c2088ed8b80bfa7ae296e622
-- name: google.golang.org/grpc
-  version: 5da22b92e9485c15a6b284d52cc54d6580864c99
+  subpackages:
+  - /storage/v1
 devImports: []

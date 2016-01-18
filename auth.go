@@ -4,9 +4,9 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	storage "code.google.com/p/google-api-go-client/storage/v1"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2/google"
+	storage "google.golang.org/api/storage/v1"
 )
 
 func getAuthenticatedClient(ctx context.Context, jwtFileLocation string) (*http.Client, error) {
@@ -15,7 +15,7 @@ func getAuthenticatedClient(ctx context.Context, jwtFileLocation string) (*http.
 		return nil, err
 	}
 
-	jwtConf, err := google.JWTConfigFromJSON(data, storage.DevstorageFull_controlScope)
+	jwtConf, err := google.JWTConfigFromJSON(data, storage.DevstorageFullControlScope)
 	if err != nil {
 		return nil, err
 	}
