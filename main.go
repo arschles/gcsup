@@ -4,17 +4,15 @@ import (
 	"fmt"
 	"io/ioutil"
 	"mime"
+	"net/http"
 	"os"
 	"strings"
 	"sync"
 
-	"golang.org/x/net/context"
-
+	"cloud.google.com/go/storage"
 	"github.com/kelseyhightower/envconfig"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
-	"google.golang.org/cloud"
-	"google.golang.org/cloud/storage"
+	"golang.org/x/net/context"
+	"google.golang.org/api/option"
 )
 
 // Config is the envconfig compatible struct to store config values that are input to gcsup
@@ -38,16 +36,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	jwtConf, err := google.JWTConfigFromJSON(data, storage.ScopeFullControl)
-	if err != nil {
-		fmt.Printf("Error creating JWT config [%s]\n", err)
-		os.Exit(1)
+	httpCl := &http.Client{
+		Transport: jwtRoundTripper{cl: &http.Client{}, token: data},
 	}
 
 	fmt.Printf("Uploading %s to gcs://%s/%s\n", conf.LocalFolder, conf.ProjectName, conf.BucketName)
 
-	ctx := cloud.NewContext(conf.ProjectName, jwtConf.Client(oauth2.NoContext))
-	client, err := storage.NewClient(ctx)
+	ctx := context.Background() //cloud.NewContext(conf.ProjectName, jwtConf.Client(oauth2.NoContext))
+	client, err := storage.NewClient(ctx, option.WithHTTPClient(httpCl))
 	if err != nil {
 		fmt.Printf("Error creating GCS client [%s]\n", err)
 		os.Exit(1)
@@ -96,7 +92,7 @@ func upload(ctx context.Context, bucket *storage.BucketHandle, conf Config, from
 	}
 
 	extension := from[strings.LastIndex(from, "."):]
-	attrs := storage.ObjectAttrs{
+	attrs := storage.ObjectAttrsToUpdate{
 		ACL: []storage.ACLRule{
 			storage.ACLRule{
 				Entity: storage.AllUsers,

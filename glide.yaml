@@ -1,8 +1,15 @@
-package: main
+package: github.com/arschles/gcsup
 import:
-  - package: github.com/kelseyhightower/envconfig
-  - package: golang.org/x/net/context
-  - package: golang.org/x/oauth2
-  - package: golang.org/x/oauth2/google
-  - package: google.golang.org/cloud
-  - package: google.golang.org/cloud/storage
+- package: github.com/kelseyhightower/envconfig
+- package: golang.org/x/net
+  subpackages:
+  - context
+- package: golang.org/x/oauth2
+  subpackages:
+  - google
+  version: f95fa95eaa936d9d87489b15d1d18b97c1ba9c28
+- package: cloud.google.com/go
+  version: ~0.16.0
+- package: google.golang.org/api
+  subpackages:
+  - option
