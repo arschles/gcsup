@@ -7,6 +7,7 @@ import:
 - package: golang.org/x/oauth2
   subpackages:
   - google
+  version: f95fa95eaa936d9d87489b15d1d18b97c1ba9c28
 - package: cloud.google.com/go
   version: ~0.16.0
 - package: google.golang.org/api
