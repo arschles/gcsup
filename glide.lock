@@ -1,5 +1,5 @@
-hash: a9041f816602f0f70aaf2656b4eeea198626021fedebe29d67f704221f3d2237
-updated: 2017-11-25T21:36:14.180467063-08:00
+hash: e1c7681426e4830e5ccd1d126c0c964710a05c4f9e7e18fe53a1a27c944026ee
+updated: 2017-11-25T21:50:32.505980994-08:00
 imports:
 - name: cloud.google.com/go
   version: 2d3a6656c17a60b0815b7e06ab0be04eacb6e613
@@ -9,6 +9,7 @@ imports:
   - internal
   - internal/optional
   - internal/version
+  - storage
 - name: github.com/golang/protobuf
   version: fec3b39b059c0f88fa6b20f5ed012b1aa203a8b4
   subpackages:
@@ -71,10 +72,6 @@ imports:
   - internal/remote_api
   - internal/urlfetch
   - urlfetch
-- name: google.golang.org/cloud
-  version: 290422ce3a4bcdb0c7998c2a994e23bc950b0bdb
-  subpackages:
-  - storage
 - name: google.golang.org/genproto
   version: 7f0da29060c682909f650ad8ed4e515bd74fa12a
   subpackages:

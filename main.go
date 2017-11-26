@@ -10,11 +10,11 @@ import (
 
 	"golang.org/x/net/context"
 
+	"cloud.google.com/go/storage"
 	"github.com/kelseyhightower/envconfig"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
-	"google.golang.org/cloud"
-	"google.golang.org/cloud/storage"
+	"google.golang.org/api/option"
 )
 
 // Config is the envconfig compatible struct to store config values that are input to gcsup

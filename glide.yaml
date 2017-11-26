@@ -9,3 +9,6 @@ import:
   - google
 - package: cloud.google.com/go
   version: ~0.16.0
+- package: google.golang.org/api
+  subpackages:
+  - option
